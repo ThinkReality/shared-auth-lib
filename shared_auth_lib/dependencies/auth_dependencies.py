@@ -100,20 +100,18 @@ async def require_auth(
         ):
             ...
     """
-    # DEV_MODE_BYPASS: return canned admin context directly.
-    # Rationale: Starlette's BaseHTTPMiddleware doesn't reliably propagate
-    # scope["headers"] or request.state mutations across middleware
-    # boundaries, so we can't inject identity upstream. Short-circuit here.
+    # DEV_MODE_BYPASS: return a canned admin context built from env vars
+    # and (optionally) X-Dev-* request headers for per-request persona
+    # overrides. Short-circuit here because Starlette's BaseHTTPMiddleware
+    # doesn't reliably propagate scope/state mutations across middleware
+    # boundaries, so we can't inject identity upstream.
+    from shared_auth_lib._dev_headers import build_dev_auth_context
     from shared_auth_lib.config import get_settings
 
-    settings = get_settings()
-    if settings.DEV_MODE_BYPASS:
-        return await client.get_auth_context(
-            settings.DEV_USER_ID,
-            correlation_id=(
-                identity.correlation_id
-                or request.headers.get("x-correlation-id")
-            ),
+    if get_settings().DEV_MODE_BYPASS:
+        return build_dev_auth_context(
+            request=request,
+            correlation_id=identity.correlation_id,
         )
 
     # Extract source IP for audit trail

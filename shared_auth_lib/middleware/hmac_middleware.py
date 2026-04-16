@@ -106,9 +106,10 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         if self._dev_mode_bypass:
-            from shared_auth_lib._dev_headers import build_dev_identity
-
-            request.state.identity = build_dev_identity(request)
+            # Skip HMAC verification. Identity is injected downstream in
+            # require_auth via build_dev_auth_context() — we can't inject
+            # it here reliably because Starlette's BaseHTTPMiddleware
+            # doesn't propagate scope/state mutations across boundaries.
             return await call_next(request)
 
         signature = request.headers.get("X-Gateway-Signature")

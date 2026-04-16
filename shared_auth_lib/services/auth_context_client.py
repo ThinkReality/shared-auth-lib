@@ -97,21 +97,10 @@ class AuthContextClient:
             AuthContextNotFoundError: If user not found or service
                 unreachable.
         """
-        settings = get_settings()
-        if settings.DEV_MODE_BYPASS:
-            return AuthContext(
-                external_auth_id=settings.DEV_USER_ID,
-                user_id=settings.DEV_USER_ID,
-                tenant_id=settings.DEV_TENANT_ID,
-                email=settings.DEV_EMAIL,
-                roles=settings.DEV_ROLES,
-                permissions=settings.DEV_PERMISSIONS,
-                role_hierarchy=[],
-                is_active=True,
-                is_suspended=False,
-                auth_provider="dev",
-                correlation_id=correlation_id,
-            )
+        if get_settings().DEV_MODE_BYPASS:
+            from shared_auth_lib._dev_headers import build_dev_auth_context
+
+            return build_dev_auth_context(correlation_id=correlation_id)
 
         cache_key = str(external_auth_id)
 
