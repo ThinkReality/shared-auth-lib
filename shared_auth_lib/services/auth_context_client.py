@@ -82,6 +82,9 @@ class AuthContextClient:
         its own Redis cache).  Successful responses are cached locally
         for ``local_cache_ttl`` seconds.
 
+        When DEV_MODE_BYPASS is active, returns a canned AuthContext
+        immediately — no cache, no HTTP call, no CRM-backend needed.
+
         Args:
             external_auth_id: The Supabase Auth UUID (JWT sub claim).
             correlation_id: Optional correlation ID for distributed
@@ -94,6 +97,22 @@ class AuthContextClient:
             AuthContextNotFoundError: If user not found or service
                 unreachable.
         """
+        settings = get_settings()
+        if settings.DEV_MODE_BYPASS:
+            return AuthContext(
+                external_auth_id=settings.DEV_USER_ID,
+                user_id=settings.DEV_USER_ID,
+                tenant_id=settings.DEV_TENANT_ID,
+                email=settings.DEV_EMAIL,
+                roles=settings.DEV_ROLES,
+                permissions=settings.DEV_PERMISSIONS,
+                role_hierarchy=[],
+                is_active=True,
+                is_suspended=False,
+                auth_provider="dev",
+                correlation_id=correlation_id,
+            )
+
         cache_key = str(external_auth_id)
 
         # 1. Check in-memory cache first (0.001ms)

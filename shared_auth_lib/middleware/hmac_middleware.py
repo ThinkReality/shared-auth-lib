@@ -46,6 +46,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         secret: str,
         skip_paths: list[str] | None = None,
         tolerance_seconds: int = 30,
+        dev_mode_bypass: bool | None = None,
     ) -> None:
         super().__init__(app)
         self.secret = secret
@@ -53,6 +54,22 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             skip_paths if skip_paths is not None else DEFAULT_SKIP_PATHS
         )
         self.tolerance_seconds = tolerance_seconds
+        # Auto-detect from settings when not explicitly passed
+        if dev_mode_bypass is None:
+            from shared_auth_lib.config import get_settings
+
+            try:
+                self._dev_mode_bypass = get_settings().DEV_MODE_BYPASS
+            except Exception:
+                self._dev_mode_bypass = False
+        else:
+            self._dev_mode_bypass = dev_mode_bypass
+        if self._dev_mode_bypass:
+            logger.warning(
+                "DEV_MODE_BYPASS ACTIVE — HMAC verification is disabled. "
+                "All requests will use a fake dev identity. "
+                "NEVER enable this in staging or production.",
+            )
         # HMAC verification metrics
         self._hmac_success: int = 0
         self._hmac_failure_missing: int = 0
@@ -86,6 +103,15 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         if self._should_skip(path):
+            return await call_next(request)
+
+        if self._dev_mode_bypass:
+            from shared_auth_lib._dev_headers import build_dev_headers
+            from shared_auth_lib.config import get_settings
+
+            request.scope["headers"] = build_dev_headers(
+                request.scope["headers"], get_settings()
+            )
             return await call_next(request)
 
         signature = request.headers.get("X-Gateway-Signature")

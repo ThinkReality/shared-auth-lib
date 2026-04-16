@@ -1,6 +1,6 @@
 [project]
 name = "shared-auth-lib"
-version = "0.2.0"
+version = "0.3.0"
 description = "Shared authorization library for ThinkRealty microservices"
 requires-python = ">=3.13"
 dependencies = [
@@ -30,7 +30,7 @@ build-backend = "hatchling.build"
 packages = ["shared_auth_lib"]
 
 [tool.uv.sources]
-tr-shared-lib = { git = "https://github.com/ThinkReality/tr-shared-lib.git", branch = "main" }
+tr-shared-lib = { path = "../tr-shared-lib", editable = true }
 
 [tool.ruff]
 line-length = 85

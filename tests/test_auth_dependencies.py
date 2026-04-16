@@ -1,6 +1,6 @@
 """Tests for FastAPI authorization dependencies."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -9,7 +9,6 @@ from fastapi.testclient import TestClient
 
 from shared_auth_lib.dependencies.auth_dependencies import (
     _AuthClientRegistry,
-    get_auth_context_client,
     init_auth_context_client,
     optional_auth,
     require_any_role,

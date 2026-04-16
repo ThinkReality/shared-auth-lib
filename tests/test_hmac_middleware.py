@@ -2,7 +2,6 @@
 
 from datetime import UTC, datetime
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 

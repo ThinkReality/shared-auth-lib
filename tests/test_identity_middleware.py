@@ -2,12 +2,10 @@
 
 from uuid import uuid4
 
-import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
 
 from shared_auth_lib.middleware.identity_middleware import (
     IdentityExtractionMiddleware,

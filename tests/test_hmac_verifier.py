@@ -1,9 +1,7 @@
 """Tests for HMAC signature computation and verification."""
 
 from datetime import UTC, datetime, timedelta
-from unittest.mock import patch
 
-import pytest
 
 from shared_auth_lib.services.hmac_verifier import (
     SIGNED_HEADERS,
