@@ -100,6 +100,22 @@ async def require_auth(
         ):
             ...
     """
+    # DEV_MODE_BYPASS: return canned admin context directly.
+    # Rationale: Starlette's BaseHTTPMiddleware doesn't reliably propagate
+    # scope["headers"] or request.state mutations across middleware
+    # boundaries, so we can't inject identity upstream. Short-circuit here.
+    from shared_auth_lib.config import get_settings
+
+    settings = get_settings()
+    if settings.DEV_MODE_BYPASS:
+        return await client.get_auth_context(
+            settings.DEV_USER_ID,
+            correlation_id=(
+                identity.correlation_id
+                or request.headers.get("x-correlation-id")
+            ),
+        )
+
     # Extract source IP for audit trail
     _source_ip = (
         request.headers.get("x-forwarded-for", "").split(",")[0].strip()
