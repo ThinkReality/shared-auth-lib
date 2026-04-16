@@ -11,8 +11,8 @@ from uuid import UUID
 import pytest
 from starlette.testclient import TestClient
 
-from shared_auth_lib._dev_headers import build_dev_headers
-from shared_auth_lib.models.auth_context import AuthContext
+from shared_auth_lib._dev_headers import build_dev_identity
+from shared_auth_lib.models.auth_context import AuthContext, GatewayIdentityHeaders
 
 _DEV_UUID = UUID("00000000-0000-0000-0000-000000000001")
 
@@ -91,65 +91,82 @@ class TestDevBypassSettings:
         assert settings.DEV_EMAIL == "custom@test.local"
 
 
-# ── Header injection ──
+# ── Identity builder ──
 
 
-class TestDevHeaders:
-    """build_dev_headers injects the right ASGI headers."""
+class TestDevIdentity:
+    """build_dev_identity returns the right GatewayIdentityHeaders."""
 
-    def _make_settings(self):
-        from shared_auth_lib.config import AuthLibSettings
+    def _request(self, headers: dict[str, str] | None = None):
+        from starlette.requests import Request
 
-        env = {
-            "AUTH_LIB_GATEWAY_SIGNING_SECRET": "test-secret",
-            "AUTH_LIB_ENVIRONMENT": "dev",
-            "AUTH_LIB_DEV_MODE_BYPASS": "true",
+        header_list = [(b"host", b"localhost")]
+        if headers:
+            for k, v in headers.items():
+                header_list.append((k.lower().encode(), v.encode()))
+        scope = {
+            "type": "http",
+            "method": "POST",
+            "path": "/api/v1/test",
+            "headers": header_list,
+            "query_string": b"",
         }
-        with patch.dict(os.environ, env, clear=False):
-            return AuthLibSettings()
+        return Request(scope)
 
-    def test_injects_identity_headers(self):
-        settings = self._make_settings()
-        original = [(b"host", b"localhost")]
-        result = build_dev_headers(original, settings)
+    def _with_settings(self):
+        return patch.dict(
+            os.environ,
+            {
+                "AUTH_LIB_GATEWAY_SIGNING_SECRET": "test-secret",
+                "AUTH_LIB_ENVIRONMENT": "dev",
+                "AUTH_LIB_DEV_MODE_BYPASS": "true",
+            },
+            clear=False,
+        )
 
-        headers_dict = {k: v for k, v in result}
-        assert headers_dict[b"x-user-id"] == str(_DEV_UUID).encode()
-        assert headers_dict[b"x-tenant-id"] == str(_DEV_UUID).encode()
-        assert headers_dict[b"x-user-role"] == b"ADMIN"
-        assert headers_dict[b"x-auth-provider"] == b"dev"
-        # Original headers preserved
-        assert headers_dict[b"host"] == b"localhost"
+    def test_default_identity(self):
+        with self._with_settings():
+            from shared_auth_lib.config import get_settings
 
-    def test_request_override_headers(self):
-        settings = self._make_settings()
+            get_settings.cache_clear()
+            identity = build_dev_identity(self._request())
+
+        assert isinstance(identity, GatewayIdentityHeaders)
+        assert identity.user_id == _DEV_UUID
+        assert identity.tenant_id == _DEV_UUID
+        assert identity.user_role == "ADMIN"
+        assert identity.auth_provider == "dev"
+
+    def test_request_header_overrides(self):
         custom_tenant = "11111111-2222-3333-4444-555555555555"
-        original = [
-            (b"host", b"localhost"),
-            (b"x-dev-tenant-id", custom_tenant.encode()),
-            (b"x-dev-roles", b"AGENT"),
-        ]
-        result = build_dev_headers(original, settings)
+        with self._with_settings():
+            from shared_auth_lib.config import get_settings
 
-        headers_dict = {k: v for k, v in result}
-        # Tenant overridden by X-Dev-Tenant-Id header
-        assert headers_dict[b"x-tenant-id"] == custom_tenant.encode()
-        # Role overridden by X-Dev-Roles header
-        assert headers_dict[b"x-user-role"] == b"AGENT"
-        # User ID stays at default (no override sent)
-        assert headers_dict[b"x-user-id"] == str(_DEV_UUID).encode()
+            get_settings.cache_clear()
+            identity = build_dev_identity(
+                self._request(
+                    {
+                        "X-Dev-Tenant-Id": custom_tenant,
+                        "X-Dev-Roles": "AGENT,MANAGER",
+                    }
+                )
+            )
 
-    def test_strips_conflicting_originals(self):
-        settings = self._make_settings()
-        original = [
-            (b"x-user-id", b"attacker-injected"),
-            (b"host", b"localhost"),
-        ]
-        result = build_dev_headers(original, settings)
+        assert str(identity.tenant_id) == custom_tenant
+        assert identity.user_role == "AGENT"
+        assert identity.user_id == _DEV_UUID  # unchanged
 
-        user_ids = [v for k, v in result if k == b"x-user-id"]
-        assert len(user_ids) == 1
-        assert user_ids[0] == str(_DEV_UUID).encode()
+    def test_invalid_override_uuid_falls_back(self):
+        with self._with_settings():
+            from shared_auth_lib.config import get_settings
+
+            get_settings.cache_clear()
+            identity = build_dev_identity(
+                self._request({"X-Dev-User-Id": "not-a-uuid"})
+            )
+
+        # Invalid UUID silently falls back to env default
+        assert identity.user_id == _DEV_UUID
 
 
 # ── AuthContext canned response ──

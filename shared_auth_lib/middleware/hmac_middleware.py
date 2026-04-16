@@ -106,12 +106,9 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         if self._dev_mode_bypass:
-            from shared_auth_lib._dev_headers import build_dev_headers
-            from shared_auth_lib.config import get_settings
+            from shared_auth_lib._dev_headers import build_dev_identity
 
-            request.scope["headers"] = build_dev_headers(
-                request.scope["headers"], get_settings()
-            )
+            request.state.identity = build_dev_identity(request)
             return await call_next(request)
 
         signature = request.headers.get("X-Gateway-Signature")

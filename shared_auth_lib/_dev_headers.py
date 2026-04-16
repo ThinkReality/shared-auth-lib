@@ -1,59 +1,57 @@
-"""Build fake ASGI headers for dev mode bypass.
+"""Build a fake GatewayIdentityHeaders for DEV_MODE_BYPASS.
 
-When DEV_MODE_BYPASS is active, GatewayHMACMiddleware injects these
-headers into the request scope so that IdentityExtractionMiddleware
-(which runs next) picks them up as if the gateway had set them.
+When the bypass is active, GatewayHMACMiddleware sets
+`request.state.identity` directly (not via ASGI header mutation —
+Starlette's BaseHTTPMiddleware doesn't reliably propagate header
+changes across middleware boundaries).
 
 Per-request overrides via X-Dev-* headers let developers switch
-personas without restarting the service.
+personas without restarting the container.
 """
 
 from __future__ import annotations
 
+from uuid import UUID
 from typing import TYPE_CHECKING
+
+from starlette.requests import Request
+
+from shared_auth_lib.config import get_settings
+from shared_auth_lib.models.auth_context import GatewayIdentityHeaders
 
 if TYPE_CHECKING:
     from shared_auth_lib.config import AuthLibSettings
 
 
-def build_dev_headers(
-    existing_headers: list[tuple[bytes, bytes]],
-    settings: "AuthLibSettings",
-) -> list[tuple[bytes, bytes]]:
-    """Return a new header list with dev identity headers appended.
+def build_dev_identity(request: Request) -> GatewayIdentityHeaders:
+    """Return a fake admin identity, honouring X-Dev-* override headers."""
+    settings: AuthLibSettings = get_settings()
+    headers = request.headers
 
-    If the incoming request already carries X-Dev-* override headers,
-    those take precedence over the env-var defaults. This lets developers
-    test different roles/permissions per-request without restarting.
-    """
-    incoming = {k.lower(): v for k, v in existing_headers}
+    user_id = _parse_uuid(headers.get("x-dev-user-id")) or settings.DEV_USER_ID
+    tenant_id = (
+        _parse_uuid(headers.get("x-dev-tenant-id")) or settings.DEV_TENANT_ID
+    )
+    roles_hdr = headers.get("x-dev-roles")
+    primary_role = (
+        roles_hdr.split(",")[0].strip()
+        if roles_hdr
+        else (settings.DEV_ROLES[0] if settings.DEV_ROLES else "ADMIN")
+    )
 
-    def _pick(override_header: bytes, default: str) -> str:
-        """Use the request-level override if present, else the env default."""
-        val = incoming.get(override_header)
-        if val:
-            return val.decode("latin-1")
-        return default
+    return GatewayIdentityHeaders(
+        user_id=user_id,
+        tenant_id=tenant_id,
+        user_role=primary_role,
+        auth_provider="dev",
+        correlation_id=headers.get("x-correlation-id"),
+    )
 
-    user_id = _pick(b"x-dev-user-id", str(settings.DEV_USER_ID))
-    tenant_id = _pick(b"x-dev-tenant-id", str(settings.DEV_TENANT_ID))
-    roles = _pick(b"x-dev-roles", ",".join(settings.DEV_ROLES))
-    # Take first role as the primary role header
-    primary_role = roles.split(",")[0].strip()
 
-    injected = [
-        (b"x-user-id", user_id.encode()),
-        (b"x-tenant-id", tenant_id.encode()),
-        (b"x-user-role", primary_role.encode()),
-        (b"x-auth-provider", b"dev"),
-    ]
-
-    # Keep all original headers, then append the injected ones.
-    # Duplicates are fine — IdentityExtractionMiddleware reads the first
-    # match via request.headers.get(), and our appended values will be
-    # found because Starlette iterates headers in order and we place
-    # injected ones at the END. However, to be safe, strip any
-    # conflicting originals so there's no ambiguity.
-    override_keys = {k for k, _ in injected}
-    cleaned = [(k, v) for k, v in existing_headers if k.lower() not in override_keys]
-    return cleaned + injected
+def _parse_uuid(value: str | None) -> UUID | None:
+    if not value:
+        return None
+    try:
+        return UUID(value)
+    except ValueError:
+        return None

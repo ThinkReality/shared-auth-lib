@@ -36,6 +36,12 @@ class IdentityExtractionMiddleware(BaseHTTPMiddleware):
         request: Request,
         call_next: RequestResponseEndpoint,
     ) -> Response:
+        # If an upstream middleware already set identity (e.g. DEV_MODE_BYPASS
+        # in GatewayHMACMiddleware), preserve it.
+        existing = getattr(request.state, "identity", None)
+        if isinstance(existing, GatewayIdentityHeaders) and existing.user_id:
+            return await call_next(request)
+
         try:
             identity = self._extract_identity(request)
             request.state.identity = identity
