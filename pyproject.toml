@@ -30,7 +30,7 @@ build-backend = "hatchling.build"
 packages = ["shared_auth_lib"]
 
 [tool.uv.sources]
-tr-shared-lib = { git = "https://github.com/ThinkReality/tr-shared-lib.git", branch = "main" }
+tr-shared-lib = { path = "../tr-shared-lib", editable = true }
 
 [tool.ruff]
 line-length = 85
