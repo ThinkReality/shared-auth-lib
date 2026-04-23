@@ -57,6 +57,8 @@ def build_dev_auth_context(
         or list(settings.DEV_PERMISSIONS)
     )
     email = _hget(request, "x-dev-email") or settings.DEV_EMAIL
+    first_name = _hget(request, "x-dev-first-name") or "Dev"
+    last_name = _hget(request, "x-dev-last-name") or "User"
     resolved_correlation = correlation_id or _hget(request, "x-correlation-id")
 
     return AuthContext(
@@ -64,6 +66,8 @@ def build_dev_auth_context(
         user_id=user_id,
         tenant_id=tenant_id,
         email=email,
+        first_name=first_name,
+        last_name=last_name,
         roles=roles,
         permissions=permissions,
         role_hierarchy=[],

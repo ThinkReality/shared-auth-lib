@@ -23,6 +23,8 @@ class AuthContext(BaseModel):
     )
     user_id: UUID = Field(..., description="Internal user ID")
     email: str
+    first_name: str | None = None
+    last_name: str | None = None
     tenant_id: UUID
     roles: list[str] = Field(default_factory=list)
     permissions: list[str] = Field(default_factory=list)
