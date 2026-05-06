@@ -109,10 +109,12 @@ async def require_auth(
     from shared_auth_lib.config import get_settings
 
     if get_settings().DEV_MODE_BYPASS:
-        return build_dev_auth_context(
+        auth_context = build_dev_auth_context(
             request=request,
             correlation_id=identity.correlation_id,
         )
+        request.state.auth_context = auth_context
+        return auth_context
 
     # Extract source IP for audit trail
     _source_ip = (
