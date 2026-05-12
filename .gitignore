@@ -36,7 +36,6 @@ ENV/
 .venv/
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -65,4 +64,9 @@ Thumbs.db
 .env.local
 
 # Ruff cache
-.ruff_cache/
+.ruff_cache/.coverage
+__pycache__/
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore
