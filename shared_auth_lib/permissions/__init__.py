@@ -1,0 +1,19 @@
+"""Shared permission constants."""
+
+from shared_auth_lib.permissions.hr import (
+    ATTENDANCE_APPROVE,
+    ATTENDANCE_EXCEPTIONS_MANAGE,
+    ATTENDANCE_EXPORT,
+    ATTENDANCE_MANUAL_CREATE,
+    ATTENDANCE_READ,
+    ATTENDANCE_SYNC,
+)
+
+__all__ = [
+    "ATTENDANCE_APPROVE",
+    "ATTENDANCE_EXCEPTIONS_MANAGE",
+    "ATTENDANCE_EXPORT",
+    "ATTENDANCE_MANUAL_CREATE",
+    "ATTENDANCE_READ",
+    "ATTENDANCE_SYNC",
+]
