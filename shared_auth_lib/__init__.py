@@ -41,6 +41,14 @@ from shared_auth_lib.models.auth_context import (
     AuthContext,
     GatewayIdentityHeaders,
 )
+from shared_auth_lib.permissions.hr import (
+    ATTENDANCE_APPROVE,
+    ATTENDANCE_EXCEPTIONS_MANAGE,
+    ATTENDANCE_EXPORT,
+    ATTENDANCE_MANUAL_CREATE,
+    ATTENDANCE_READ,
+    ATTENDANCE_SYNC,
+)
 from shared_auth_lib.services.auth_context_client import (
     AuthContextClient,
 )
@@ -52,6 +60,12 @@ from shared_auth_lib.services.hmac_verifier import (
 __all__ = [
     "AuthContext",
     "AuthContextClient",
+    "ATTENDANCE_APPROVE",
+    "ATTENDANCE_EXCEPTIONS_MANAGE",
+    "ATTENDANCE_EXPORT",
+    "ATTENDANCE_MANUAL_CREATE",
+    "ATTENDANCE_READ",
+    "ATTENDANCE_SYNC",
     "GatewayHMACMiddleware",
     "GatewayIdentityHeaders",
     "IdentityExtractionMiddleware",
