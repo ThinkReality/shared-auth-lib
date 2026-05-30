@@ -48,6 +48,9 @@ from shared_auth_lib.permissions.hr import (
     ATTENDANCE_MANUAL_CREATE,
     ATTENDANCE_READ,
     ATTENDANCE_SYNC,
+    EMPLOYEES_READ,
+    EMPLOYEES_SYNC,
+    HIKCENTRAL_READ,
 )
 from shared_auth_lib.services.auth_context_client import (
     AuthContextClient,
@@ -66,6 +69,9 @@ __all__ = [
     "ATTENDANCE_MANUAL_CREATE",
     "ATTENDANCE_READ",
     "ATTENDANCE_SYNC",
+    "EMPLOYEES_READ",
+    "EMPLOYEES_SYNC",
+    "HIKCENTRAL_READ",
     "GatewayHMACMiddleware",
     "GatewayIdentityHeaders",
     "IdentityExtractionMiddleware",
