@@ -41,7 +41,7 @@ from shared_auth_lib.models.auth_context import (
     AuthContext,
     GatewayIdentityHeaders,
 )
-from shared_auth_lib.permissions.hr import (
+from shared_auth_lib.permissions import (
     ATTENDANCE_APPROVE,
     ATTENDANCE_EXCEPTIONS_MANAGE,
     ATTENDANCE_EXPORT,
