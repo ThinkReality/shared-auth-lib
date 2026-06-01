@@ -42,7 +42,7 @@ class AuthContext(BaseModel):
 
     def has_permission(self, permission: str) -> bool:
         """Check if user has a specific permission."""
-        return permission in self.permissions
+        return "*" in self.permissions or permission in self.permissions
 
     def has_any_role(self, roles: list[str]) -> bool:
         """Check if user has any of the specified roles."""
