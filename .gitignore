@@ -66,3 +66,9 @@ Thumbs.db
 # Ruff cache
 .ruff_cache/.coverage
 __pycache__/
+
+# Prevent cross-project contamination
+public/
+public/fonts/
+*.bat
+branch_structure.json

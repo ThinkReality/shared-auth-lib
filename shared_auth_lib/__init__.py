@@ -20,6 +20,16 @@ Public API re-exports for convenient downstream usage::
     )
 """
 
+from shared_auth_lib.authz import (
+    can,
+    require_capability,
+)
+from shared_auth_lib.constants import (
+    ADMIN_ROLES,
+    AGENT_ROLES,
+    ROLE_RANK,
+    PlatformRole,
+)
 from shared_auth_lib.dependencies.auth_dependencies import (
     get_current_auth_context,
     get_current_user,
@@ -61,8 +71,12 @@ from shared_auth_lib.services.hmac_verifier import (
 )
 
 __all__ = [
+    "ADMIN_ROLES",
+    "AGENT_ROLES",
     "AuthContext",
     "AuthContextClient",
+    "PlatformRole",
+    "ROLE_RANK",
     "ATTENDANCE_APPROVE",
     "ATTENDANCE_EXCEPTIONS_MANAGE",
     "ATTENDANCE_EXPORT",
@@ -75,6 +89,7 @@ __all__ = [
     "GatewayHMACMiddleware",
     "GatewayIdentityHeaders",
     "IdentityExtractionMiddleware",
+    "can",
     "compute_signature",
     "get_current_auth_context",
     "get_current_user",
@@ -83,6 +98,7 @@ __all__ = [
     "optional_auth",
     "require_any_role",
     "require_auth",
+    "require_capability",
     "require_permission",
     "require_role",
     "verify_signature",

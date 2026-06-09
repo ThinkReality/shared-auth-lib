@@ -11,6 +11,13 @@ from shared_auth_lib.permissions.hr import (
     EMPLOYEES_SYNC,
     HIKCENTRAL_READ,
 )
+from shared_auth_lib.permissions.task import (
+    TASK_ASSIGN,
+    TASK_CREATE,
+    TASK_DELETE,
+    TASK_EDIT,
+    TASK_VIEW,
+)
 
 __all__ = [
     "ATTENDANCE_APPROVE",
@@ -22,4 +29,9 @@ __all__ = [
     "EMPLOYEES_READ",
     "EMPLOYEES_SYNC",
     "HIKCENTRAL_READ",
+    "TASK_ASSIGN",
+    "TASK_CREATE",
+    "TASK_DELETE",
+    "TASK_EDIT",
+    "TASK_VIEW",
 ]
