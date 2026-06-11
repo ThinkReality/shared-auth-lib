@@ -2,7 +2,7 @@
 from uuid import UUID
 
 import pytest
-from fastapi import HTTPException
+from tr_shared.exceptions import AuthorizationError
 
 from shared_auth_lib.authz.capability import can, require_capability
 from shared_auth_lib.models.auth_context import AuthContext
@@ -45,6 +45,6 @@ async def test_require_capability_allows_with_permission():
 async def test_require_capability_denies_without_permission():
     ctx = _ctx([])
     checker = require_capability("lead:edit")
-    with pytest.raises(HTTPException) as exc:
+    with pytest.raises(AuthorizationError) as exc:
         await checker(auth_context=ctx)
     assert exc.value.status_code == 403

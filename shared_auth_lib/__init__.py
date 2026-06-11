@@ -51,17 +51,6 @@ from shared_auth_lib.models.auth_context import (
     AuthContext,
     GatewayIdentityHeaders,
 )
-from shared_auth_lib.permissions import (
-    ATTENDANCE_APPROVE,
-    ATTENDANCE_EXCEPTIONS_MANAGE,
-    ATTENDANCE_EXPORT,
-    ATTENDANCE_MANUAL_CREATE,
-    ATTENDANCE_READ,
-    ATTENDANCE_SYNC,
-    EMPLOYEES_READ,
-    EMPLOYEES_SYNC,
-    HIKCENTRAL_READ,
-)
 from shared_auth_lib.services.auth_context_client import (
     AuthContextClient,
 )
@@ -77,15 +66,6 @@ __all__ = [
     "AuthContextClient",
     "PlatformRole",
     "ROLE_RANK",
-    "ATTENDANCE_APPROVE",
-    "ATTENDANCE_EXCEPTIONS_MANAGE",
-    "ATTENDANCE_EXPORT",
-    "ATTENDANCE_MANUAL_CREATE",
-    "ATTENDANCE_READ",
-    "ATTENDANCE_SYNC",
-    "EMPLOYEES_READ",
-    "EMPLOYEES_SYNC",
-    "HIKCENTRAL_READ",
     "GatewayHMACMiddleware",
     "GatewayIdentityHeaders",
     "IdentityExtractionMiddleware",

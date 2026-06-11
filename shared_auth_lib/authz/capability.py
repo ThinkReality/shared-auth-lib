@@ -11,7 +11,8 @@ signature is FROZEN.
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
+from tr_shared.exceptions import AuthorizationError
 
 from shared_auth_lib.dependencies.auth_dependencies import require_auth
 from shared_auth_lib.models.auth_context import AuthContext
@@ -31,17 +32,15 @@ def require_capability(
 ) -> Callable[..., Awaitable[AuthContext]]:
     """Dependency factory: require a capability, routed through ``can()``.
 
-    Mirrors ``require_permission`` (raises ``HTTPException(403)`` on deny).
+    Raises ``tr_shared.exceptions.AuthorizationError`` (403) on deny, so the
+    GlobalErrorHandler renders the standard structured error body.
     """
 
     async def _checker(
         auth_context: AuthContext = Depends(require_auth),
     ) -> AuthContext:
         if not can(auth_context, permission):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Capability required: {permission}",
-            )
+            raise AuthorizationError(detail=f"Capability required: {permission}")
         return auth_context
 
     return _checker
