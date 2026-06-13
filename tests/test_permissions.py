@@ -6,9 +6,13 @@ import re
 import shared_auth_lib.permissions as permissions_pkg
 from tr_shared.contracts.taxonomy import Feature
 
-# The locked action vocabulary (D-PERMSCHEME). Every permission is {feature}:{action}
-# where feature is a Feature-spine member and action is one of these eight.
-ALLOWED_ACTIONS = {
+# D-PERMSCHEME (relaxed 2026-06-13): every permission is {feature}:{action} where
+# feature is a Feature-spine member and action is a lowercase token. The eight
+# PREFERRED verbs below stay the convention for NEW permissions, but compound
+# actions (e.g. hr:attendance_read, media:upload) are permitted — they reflect
+# live, DB-granted strings that cannot be renamed without a permission-row
+# migration. Wildcards ("*") are grant-side data, never declared as constants.
+PREFERRED_ACTIONS = {
     "view", "create", "edit", "delete", "export",
     "sync", "approve", "assign",
 }
@@ -35,14 +39,14 @@ def test_every_permission_module_follows_feature_action_scheme():
     for module in modules:
         for perm in _constants(module):
             seen += 1
+            assert "*" not in perm, (
+                f"{perm!r}: wildcards are grant-side data, not lib constants"
+            )
             assert _SCHEME.match(perm), f"{perm!r} is not '{{feature}}:{{action}}'"
             feature, action = perm.split(":")
             assert feature in _FEATURES, (
                 f"{perm!r} prefix {feature!r} is not a Feature-spine member "
                 f"({sorted(_FEATURES)})"
-            )
-            assert action in ALLOWED_ACTIONS, (
-                f"{perm!r} action {action!r} not in the locked set {sorted(ALLOWED_ACTIONS)}"
             )
     assert seen, "permission modules declared no constants"
 

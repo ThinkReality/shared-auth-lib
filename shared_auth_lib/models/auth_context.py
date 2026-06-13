@@ -6,6 +6,21 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
+def _grant_matches(granted: str, required: str) -> bool:
+    """Whether a single granted permission satisfies ``required``.
+
+    The platform permission-matching contract:
+    - exact match;
+    - the global ``"*"`` grant;
+    - hierarchical prefix wildcard: ``lead:*`` grants ``lead:read`` and
+      ``a:b:*`` grants ``a:b:c``. The trailing colon is kept in the prefix so
+      ``lead:*`` does NOT grant ``leads:read``.
+    """
+    if granted == required or granted == "*":
+        return True
+    return granted.endswith(":*") and required.startswith(granted[:-1])
+
+
 class AuthContext(BaseModel):
     """Authorization context extracted from gateway headers + CRM-backend lookup.
 
@@ -41,8 +56,15 @@ class AuthContext(BaseModel):
         return v if isinstance(v, list) else []
 
     def has_permission(self, permission: str) -> bool:
-        """Check if user has a specific permission."""
-        return "*" in self.permissions or permission in self.permissions
+        """Check if user has a specific permission.
+
+        Supports the global ``"*"`` grant and hierarchical prefix wildcards
+        (``lead:*`` grants ``lead:read``). This is the single platform-wide
+        matcher — services route every permission decision through here (and
+        through ``can()``/``require_permission``, which delegate to it), so the
+        old per-service wildcard re-implementations are no longer needed.
+        """
+        return any(_grant_matches(g, permission) for g in self.permissions)
 
     def has_any_role(self, roles: list[str]) -> bool:
         """Check if user has any of the specified roles."""

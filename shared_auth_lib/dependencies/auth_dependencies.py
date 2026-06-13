@@ -13,6 +13,7 @@ from typing import Any
 
 from fastapi import Depends, HTTPException, Request, status
 
+from shared_auth_lib.constants.roles import PlatformRole
 from shared_auth_lib.exceptions import AuthContextNotFoundError
 from shared_auth_lib.logging import get_logger
 from shared_auth_lib.middleware.identity_middleware import (
@@ -245,19 +246,37 @@ def require_permission(
     return _checker
 
 
+def _validate_role(role: PlatformRole | str) -> str:
+    """Normalize a role arg to its string value, rejecting non-PlatformRole
+    values at dependency-construction time (router registration), not at request
+    time. Accepts a ``PlatformRole`` or its string value."""
+    try:
+        return str(PlatformRole(str(role)))
+    except ValueError as exc:
+        valid = ", ".join(r.value for r in PlatformRole)
+        raise ValueError(
+            f"Unknown role {role!r}; must be a PlatformRole. Valid: {valid}"
+        ) from exc
+
+
 def require_role(
-    role: str,
+    role: PlatformRole | str,
 ) -> Callable[..., Awaitable[AuthContext]]:
     """Dependency factory: require a specific role (or higher via hierarchy).
+
+    The role is validated against ``PlatformRole`` when the dependency is
+    constructed, so a bare or unknown role string fails at import/router
+    registration rather than silently passing.
 
     Usage::
 
         @router.get("/admin/users")
         async def list_users(
-            auth: AuthContext = Depends(require_role("ADMIN")),
+            auth: AuthContext = Depends(require_role(PlatformRole.ADMIN)),
         ):
             ...
     """
+    role = _validate_role(role)
 
     async def _checker(
         auth_context: AuthContext = Depends(require_auth),
@@ -273,20 +292,23 @@ def require_role(
 
 
 def require_any_role(
-    roles: list[str],
+    roles: list[PlatformRole | str],
 ) -> Callable[..., Awaitable[AuthContext]]:
     """Dependency factory: require any of the specified roles.
+
+    Each role is validated against ``PlatformRole`` at construction time.
 
     Usage::
 
         @router.post("/leads/export")
         async def export(
             auth: AuthContext = Depends(
-                require_any_role(["ADMIN", "MANAGER"])
+                require_any_role([PlatformRole.ADMIN, PlatformRole.MANAGER])
             ),
         ):
             ...
     """
+    roles = [_validate_role(r) for r in roles]
 
     async def _checker(
         auth_context: AuthContext = Depends(require_auth),
