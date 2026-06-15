@@ -1,5 +1,8 @@
 """Shared permission constants (per-feature modules)."""
 
+from shared_auth_lib.permissions.admin import (
+    ADMIN_READ,
+)
 from shared_auth_lib.permissions.finance import (
     FINANCE_EXPORT,
     FINANCE_VIEW,
@@ -36,6 +39,12 @@ from shared_auth_lib.permissions.media import (
     MEDIA_UPLOAD,
     MEDIA_VIEW,
 )
+from shared_auth_lib.permissions.lms import (
+    LMS_AGENT_VIEW_STATS,
+    LMS_ASSIGNMENT_CREATE,
+    LMS_QUIZ_PUBLISH,
+    LMS_QUIZ_VIEW_PROGRESS,
+)
 from shared_auth_lib.permissions.task import (
     TASK_ASSIGN,
     TASK_CREATE,
@@ -45,6 +54,8 @@ from shared_auth_lib.permissions.task import (
 )
 
 __all__ = [
+    # admin
+    "ADMIN_READ",
     # finance
     "FINANCE_EXPORT",
     "FINANCE_VIEW",
@@ -76,6 +87,11 @@ __all__ = [
     "MEDIA_UPDATE",
     "MEDIA_UPLOAD",
     "MEDIA_VIEW",
+    # lms
+    "LMS_AGENT_VIEW_STATS",
+    "LMS_ASSIGNMENT_CREATE",
+    "LMS_QUIZ_PUBLISH",
+    "LMS_QUIZ_VIEW_PROGRESS",
     # task
     "TASK_ASSIGN",
     "TASK_CREATE",
