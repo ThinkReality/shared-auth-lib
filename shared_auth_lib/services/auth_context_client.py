@@ -19,6 +19,7 @@ import httpx
 from tr_shared.http.circuit_breaker import CircuitBreaker
 
 from shared_auth_lib.config import get_settings
+from shared_auth_lib.constants.headers import SERVICE_TOKEN_HEADER, SignedHeader
 from shared_auth_lib.exceptions import AuthContextNotFoundError
 from shared_auth_lib.logging import get_logger
 from shared_auth_lib.models.auth_context import AuthContext
@@ -133,10 +134,10 @@ class AuthContextClient:
             f"/api/v1/internal/auth-context/{external_auth_id}"
         )
         headers: dict[str, str] = {
-            "X-Service-Token": self._service_token,
+            SERVICE_TOKEN_HEADER: self._service_token,
         }
         if correlation_id:
-            headers["X-Correlation-ID"] = correlation_id
+            headers[SignedHeader.CORRELATION_ID] = correlation_id
 
         try:
             response = await self._client.get(

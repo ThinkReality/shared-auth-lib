@@ -17,13 +17,9 @@ import hmac
 from datetime import UTC, datetime
 from typing import Final
 
+from shared_auth_lib.constants.headers import SIGNED_HEADERS
+
 TIMESTAMP_TOLERANCE_SECONDS: Final[int] = 30
-SIGNED_HEADERS: Final[list[str]] = [
-    "X-User-ID",
-    "X-User-Role",
-    "X-Tenant-ID",
-    "X-Correlation-ID",
-]
 
 
 def _get_header_value(
