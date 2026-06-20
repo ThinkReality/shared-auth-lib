@@ -1,29 +1,28 @@
-"""Canonical gateway↔downstream header names — the single source of truth.
+"""Gateway↔downstream HMAC signature contract.
 
-The gateway signs requests and downstream services verify them; both sides must
-spell these header names identically or HMAC verification fails. Define them once
-here so a rename can never drift between signer and verifier.
+The canonical header NAME strings are the single source of truth in
+``tr_shared.contracts.headers.HttpHeader`` (the base lib every service depends
+on). This module pins the SUBSET that is HMAC-signed and, critically, their
+ORDER — signer and verifier iterate this sequence identically to build the same
+canonical string. Names derive from ``HttpHeader`` so a rename can never drift;
+the order lives here because it is the signing contract, not a naming concern.
 """
 
 from enum import StrEnum
 from typing import Final
 
+from tr_shared.contracts.headers import HttpHeader
+
 
 class SignedHeader(StrEnum):
-    """Identity headers included in the gateway HMAC signature canonical input.
+    """Values derive from HttpHeader (SSOT). ORDER is the signing contract — do not reorder."""
 
-    Definition ORDER is part of the contract: signer and verifier iterate this
-    sequence identically to build the same canonical string. Do not reorder.
-    """
-
-    USER_ID = "X-User-ID"
-    USER_ROLE = "X-User-Role"
-    TENANT_ID = "X-Tenant-ID"
-    CORRELATION_ID = "X-Correlation-ID"
+    USER_ID = HttpHeader.USER_ID.value
+    USER_ROLE = HttpHeader.USER_ROLE.value
+    TENANT_ID = HttpHeader.TENANT_ID.value
+    CORRELATION_ID = HttpHeader.CORRELATION_ID.value
 
 
-# Ordered list consumed by compute_signature() / verify_signature().
 SIGNED_HEADERS: Final[list[str]] = [h.value for h in SignedHeader]
 
-# Service-to-service auth header for /internal/* endpoints (bypasses HMAC).
-SERVICE_TOKEN_HEADER: Final[str] = "X-Service-Token"
+SERVICE_TOKEN_HEADER: Final[str] = HttpHeader.SERVICE_TOKEN.value

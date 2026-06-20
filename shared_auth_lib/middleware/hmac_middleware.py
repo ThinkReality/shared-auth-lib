@@ -1,20 +1,11 @@
-"""Gateway HMAC signature verification middleware for downstream services.
-
-Downstream services add this middleware to reject requests that were
-not signed by the trusted API Gateway. Requests missing the
-X-Gateway-Signature / X-Gateway-Timestamp headers or carrying an
-invalid signature are rejected with 403 Forbidden.
-
-Emits structured log metrics for HMAC verification success/failure
-rates to enable monitoring dashboards.
-"""
-
 from fastapi import status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
+
+from tr_shared.contracts.headers import HttpHeader
 
 from shared_auth_lib.logging import get_logger
 from shared_auth_lib.services.hmac_verifier import verify_signature
@@ -32,13 +23,6 @@ DEFAULT_SKIP_PATHS: list[str] = [
 
 
 class GatewayHMACMiddleware(BaseHTTPMiddleware):
-    """Verify HMAC signatures on requests forwarded by the API Gateway.
-
-    Skips verification for health checks, documentation, and internal
-    service-to-service endpoints (which use X-Service-Token instead).
-
-    Tracks verification success/failure counts for monitoring.
-    """
 
     def __init__(
         self,
@@ -54,7 +38,6 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             skip_paths if skip_paths is not None else DEFAULT_SKIP_PATHS
         )
         self.tolerance_seconds = tolerance_seconds
-        # Auto-detect from settings when not explicitly passed
         if dev_mode_bypass is None:
             from shared_auth_lib.config import get_settings
 
@@ -70,14 +53,12 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
                 "All requests will use a fake dev identity. "
                 "NEVER enable this in staging or production.",
             )
-        # HMAC verification metrics
         self._hmac_success: int = 0
         self._hmac_failure_missing: int = 0
         self._hmac_failure_invalid: int = 0
 
     @property
     def hmac_stats(self) -> dict:
-        """Return HMAC verification metrics snapshot."""
         total = (
             self._hmac_success
             + self._hmac_failure_missing
@@ -112,8 +93,8 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             # doesn't propagate scope/state mutations across boundaries.
             return await call_next(request)
 
-        signature = request.headers.get("X-Gateway-Signature")
-        timestamp = request.headers.get("X-Gateway-Timestamp")
+        signature = request.headers.get(HttpHeader.GATEWAY_SIGNATURE.value)
+        timestamp = request.headers.get(HttpHeader.GATEWAY_TIMESTAMP.value)
 
         if not signature or not timestamp:
             self._hmac_failure_missing += 1
@@ -122,7 +103,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
                 extra={
                     "path": path,
                     "correlation_id": request.headers.get(
-                        "X-Correlation-Id"
+                        HttpHeader.CORRELATION_ID.value
                     ),
                     "metric_type": "hmac_verification",
                     "result": "failure_missing_headers",
@@ -156,7 +137,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
                 extra={
                     "path": path,
                     "correlation_id": request.headers.get(
-                        "X-Correlation-Id"
+                        HttpHeader.CORRELATION_ID.value
                     ),
                     "metric_type": "hmac_verification",
                     "result": "failure_invalid_signature",

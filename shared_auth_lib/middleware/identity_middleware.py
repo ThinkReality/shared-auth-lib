@@ -1,9 +1,4 @@
-"""Identity header extraction and validation middleware.
-
-Runs AFTER GatewayHMACMiddleware so that headers are already trusted.
-Extracts X-User-Id, X-User-Role, X-Tenant-ID, etc. from the request,
-validates UUID format, and stores the result in request.state.identity.
-"""
+"""Runs AFTER GatewayHMACMiddleware — headers are trusted by this point."""
 
 from uuid import UUID
 
@@ -11,6 +6,8 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
+
+from tr_shared.contracts.headers import HttpHeader
 
 from shared_auth_lib.exceptions import InvalidIdentityHeaderError
 from shared_auth_lib.logging import get_logger
@@ -20,13 +17,6 @@ logger = get_logger(__name__)
 
 
 class IdentityExtractionMiddleware(BaseHTTPMiddleware):
-    """Extract and validate identity headers forwarded by API Gateway.
-
-    Stores a GatewayIdentityHeaders instance on request.state.identity.
-    If extraction fails (e.g. malformed UUID), an empty identity object
-    is stored and a warning is logged. Auth dependencies downstream will
-    handle the missing identity appropriately.
-    """
 
     def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
@@ -54,35 +44,35 @@ class IdentityExtractionMiddleware(BaseHTTPMiddleware):
     def _extract_identity(
         self, request: Request
     ) -> GatewayIdentityHeaders:
-        """Extract and validate identity headers from the request."""
+        # request.headers is case-insensitive, so the canonical HttpHeader
+        # spelling matches regardless of how the gateway cased it on the wire.
         headers = request.headers
 
-        user_id_str = headers.get("X-User-Id")
+        user_id_str = headers.get(HttpHeader.USER_ID.value)
         user_id: UUID | None = None
         if user_id_str:
             try:
                 user_id = UUID(user_id_str)
             except ValueError as exc:
                 raise InvalidIdentityHeaderError(
-                    f"X-User-Id must be a valid UUID, got: "
+                    f"{HttpHeader.USER_ID.value} must be a valid UUID, got: "
                     f"{user_id_str}"
                 ) from exc
 
-        # Starlette normalizes incoming headers to lowercase.
-        tenant_id_str = headers.get("x-tenant-id")
+        tenant_id_str = headers.get(HttpHeader.TENANT_ID.value)
         tenant_id: UUID | None = None
         if tenant_id_str:
             try:
                 tenant_id = UUID(tenant_id_str)
             except ValueError as exc:
                 raise InvalidIdentityHeaderError(
-                    f"X-Tenant-ID must be a valid UUID, got: "
+                    f"{HttpHeader.TENANT_ID.value} must be a valid UUID, got: "
                     f"{tenant_id_str}"
                 ) from exc
 
         return GatewayIdentityHeaders(
             user_id=user_id,
-            user_role=headers.get("X-User-Role"),
+            user_role=headers.get(HttpHeader.USER_ROLE.value),
             tenant_id=tenant_id,
             # X-User-Email intentionally NOT extracted here.
             # It is not in SIGNED_HEADERS and not set by the
@@ -90,21 +80,20 @@ class IdentityExtractionMiddleware(BaseHTTPMiddleware):
             # The authoritative email comes from AuthContext
             # (fetched from CRM-backend).
             auth_provider=headers.get(
-                "X-Auth-Provider", "supabase"
+                HttpHeader.AUTH_PROVIDER.value, "supabase"
             ),
             correlation_id=(
-                headers.get("X-Correlation-Id")
+                headers.get(HttpHeader.CORRELATION_ID.value)
                 or getattr(request.state, "correlation_id", None)
             ),
-            gateway_signature=headers.get("X-Gateway-Signature"),
-            gateway_timestamp=headers.get("X-Gateway-Timestamp"),
+            gateway_signature=headers.get(HttpHeader.GATEWAY_SIGNATURE.value),
+            gateway_timestamp=headers.get(HttpHeader.GATEWAY_TIMESTAMP.value),
         )
 
 
 def get_gateway_identity(
     request: Request,
 ) -> GatewayIdentityHeaders:
-    """FastAPI dependency to retrieve the identity set by middleware."""
     return getattr(
         request.state, "identity", GatewayIdentityHeaders()
     )

@@ -16,6 +16,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from tr_shared.contracts.headers import HttpHeader
+
 from shared_auth_lib.config import get_settings
 from shared_auth_lib.models.auth_context import AuthContext
 
@@ -33,13 +35,6 @@ def build_dev_auth_context(
       1. X-Dev-* request headers (per-request override)
       2. AUTH_LIB_DEV_* env vars (container-wide default)
       3. Hardcoded fallbacks (admin + wildcard permissions)
-
-    Parameters:
-        request: The incoming request, for per-request overrides. Optional
-            so callers outside the FastAPI dependency chain (e.g.
-            AuthContextClient) can still use the helper with env defaults.
-        correlation_id: Explicit correlation ID. If None, falls back to
-            X-Correlation-Id on the request.
     """
     settings = get_settings()
 
@@ -59,7 +54,9 @@ def build_dev_auth_context(
     email = _hget(request, "x-dev-email") or settings.DEV_EMAIL
     first_name = _hget(request, "x-dev-first-name") or "Dev"
     last_name = _hget(request, "x-dev-last-name") or "User"
-    resolved_correlation = correlation_id or _hget(request, "x-correlation-id")
+    resolved_correlation = correlation_id or _hget(
+        request, HttpHeader.CORRELATION_ID.value
+    )
 
     return AuthContext(
         external_auth_id=user_id,
@@ -79,7 +76,6 @@ def build_dev_auth_context(
 
 
 def _hget(request: "Request | None", key: str) -> str | None:
-    """Case-insensitive header lookup, tolerant of missing request."""
     if request is None:
         return None
     return request.headers.get(key)
