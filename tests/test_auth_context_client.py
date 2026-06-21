@@ -58,12 +58,12 @@ def mock_transport_500():
 
 def _make_client(transport: httpx.MockTransport) -> AuthContextClient:
     client = AuthContextClient(
-        crm_backend_url="http://crm-backend:8000",
+        crm_core_url="http://tr-crm-core:8000",
         service_token="test-token",
         timeout=5.0,
     )
     client._client = httpx.AsyncClient(
-        base_url="http://crm-backend:8000",
+        base_url="http://tr-crm-core:8000",
         transport=transport,
     )
     return client
@@ -175,13 +175,13 @@ class TestCircuitBreaker:
             lambda req: httpx.Response(500, json={"detail": "error"})
         )
         client = AuthContextClient(
-            crm_backend_url="http://crm-backend:8000",
+            crm_core_url="http://tr-crm-core:8000",
             service_token="test-token",
             circuit_failure_threshold=3,
             circuit_recovery_timeout=30,
         )
         client._client = httpx.AsyncClient(
-            base_url="http://crm-backend:8000",
+            base_url="http://tr-crm-core:8000",
             transport=transport,
         )
         return client
@@ -209,13 +209,13 @@ class TestCircuitBreaker:
             return httpx.Response(500, json={})
 
         client = AuthContextClient(
-            crm_backend_url="http://crm-backend:8000",
+            crm_core_url="http://tr-crm-core:8000",
             service_token="test-token",
             circuit_failure_threshold=1,
             circuit_recovery_timeout=9999,
         )
         client._client = httpx.AsyncClient(
-            base_url="http://crm-backend:8000",
+            base_url="http://tr-crm-core:8000",
             transport=httpx.MockTransport(counting_transport),
         )
         try:
@@ -245,13 +245,13 @@ class TestCircuitBreaker:
             return resp
 
         client = AuthContextClient(
-            crm_backend_url="http://crm-backend:8000",
+            crm_core_url="http://tr-crm-core:8000",
             service_token="test-token",
             circuit_failure_threshold=1,
             circuit_recovery_timeout=0,  # immediately half-open
         )
         client._client = httpx.AsyncClient(
-            base_url="http://crm-backend:8000",
+            base_url="http://tr-crm-core:8000",
             transport=httpx.MockTransport(sequential),
         )
         try:
@@ -268,13 +268,13 @@ class TestCircuitBreaker:
     async def test_circuit_stays_open_on_probe_failure(self):
         """A failed probe in half-open state keeps the circuit open."""
         client = AuthContextClient(
-            crm_backend_url="http://crm-backend:8000",
+            crm_core_url="http://tr-crm-core:8000",
             service_token="test-token",
             circuit_failure_threshold=1,
             circuit_recovery_timeout=0,
         )
         client._client = httpx.AsyncClient(
-            base_url="http://crm-backend:8000",
+            base_url="http://tr-crm-core:8000",
             transport=httpx.MockTransport(
                 lambda req: httpx.Response(500, json={})
             ),

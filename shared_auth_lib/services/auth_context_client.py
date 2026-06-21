@@ -42,7 +42,7 @@ class AuthContextClient:
 
     def __init__(
         self,
-        crm_backend_url: str,
+        crm_core_url: str,
         service_token: str,
         timeout: float | None = None,
         circuit_failure_threshold: int = 10,
@@ -50,7 +50,7 @@ class AuthContextClient:
         local_cache_ttl: int = 60,
         local_cache_max_size: int = 1000,
     ) -> None:
-        self._crm_backend_url = crm_backend_url.rstrip("/")
+        self._crm_core_url = crm_core_url.rstrip("/")
         self._service_token = service_token
         self._timeout = (
             timeout
@@ -58,7 +58,7 @@ class AuthContextClient:
             else get_settings().AUTH_CONTEXT_REQUEST_TIMEOUT
         )
         self._client = httpx.AsyncClient(
-            base_url=self._crm_backend_url,
+            base_url=self._crm_core_url,
             timeout=httpx.Timeout(self._timeout),
         )
         self._circuit = CircuitBreaker(

@@ -83,7 +83,7 @@ class TestDevBypassSettings:
                 DEV_MODE_BYPASS="true",
                 ENVIRONMENT="production",
                 SERVICE_TOKEN="real-token",
-                CRM_BACKEND_URL="http://crm-backend:8000",
+                CRM_CORE_URL="http://tr-crm-core:8000",
             )
 
     def test_bypass_rejected_in_staging(self):
@@ -92,7 +92,7 @@ class TestDevBypassSettings:
                 DEV_MODE_BYPASS="true",
                 ENVIRONMENT="staging",
                 SERVICE_TOKEN="real-token",
-                CRM_BACKEND_URL="http://crm-backend:8000",
+                CRM_CORE_URL="http://tr-crm-core:8000",
             )
 
 
@@ -271,7 +271,7 @@ class TestAuthContextClientBypass:
     async def test_short_circuits_http_call(self):
         env = {
             **_dev_env(),
-            "AUTH_LIB_CRM_BACKEND_URL": "http://crm-backend:8000",
+            "AUTH_LIB_CRM_CORE_URL": "http://tr-crm-core:8000",
             "AUTH_LIB_SERVICE_TOKEN": "test-token",
         }
         with patch.dict(os.environ, env, clear=False):
@@ -283,7 +283,7 @@ class TestAuthContextClientBypass:
             )
 
             client = AuthContextClient(
-                crm_backend_url="http://crm-backend:8000",
+                crm_core_url="http://tr-crm-core:8000",
                 service_token="test-token",
             )
             try:

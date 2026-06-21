@@ -21,7 +21,7 @@ Each downstream service must set these:
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `AUTH_LIB_GATEWAY_SIGNING_SECRET` | Yes | - | HMAC shared secret (must match gateway) |
-| `AUTH_LIB_CRM_BACKEND_URL` | No | `http://crm-backend:8000` | CRM-backend base URL |
+| `AUTH_LIB_CRM_CORE_URL` | No | `http://tr-crm-core:8000` | CRM-backend base URL |
 | `AUTH_LIB_SERVICE_TOKEN` | No | `""` | Service token for internal API calls |
 | `AUTH_LIB_ENVIRONMENT` | No | `development` | Environment name |
 | `AUTH_LIB_GATEWAY_TIMESTAMP_TOLERANCE` | No | `30` | Max age (seconds) for gateway timestamps |
@@ -43,7 +43,7 @@ settings = get_settings()
 
 # During app startup (lifespan):
 client = AuthContextClient(
-    crm_backend_url=settings.CRM_BACKEND_URL,
+    crm_core_url=settings.CRM_CORE_URL,
     service_token=settings.SERVICE_TOKEN,
 )
 init_auth_context_client(client)

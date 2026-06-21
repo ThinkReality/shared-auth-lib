@@ -27,7 +27,7 @@ class AuthLibSettings(BaseSettings):
 
     GATEWAY_SIGNING_SECRET: str
     ENVIRONMENT: str = "development"
-    CRM_BACKEND_URL: str = "http://crm-backend:8000"
+    CRM_CORE_URL: str = "http://tr-crm-core:8000"
     SERVICE_TOKEN: str = ""
     GATEWAY_TIMESTAMP_TOLERANCE: int = 30
     AUTH_CONTEXT_REQUEST_TIMEOUT: float = 5.0
@@ -64,9 +64,9 @@ class AuthLibSettings(BaseSettings):
                     "AUTH_LIB_GATEWAY_SIGNING_SECRET must not be "
                     f"blank in {self.ENVIRONMENT}"
                 )
-            if "localhost" in self.CRM_BACKEND_URL:
+            if "localhost" in self.CRM_CORE_URL:
                 raise ValueError(
-                    "AUTH_LIB_CRM_BACKEND_URL must not point to "
+                    "AUTH_LIB_CRM_CORE_URL must not point to "
                     f"localhost in {self.ENVIRONMENT}"
                 )
         return self
