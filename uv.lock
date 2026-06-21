@@ -475,7 +475,7 @@ wheels = [
 [[package]]
 name = "tr-shared-lib"
 version = "0.27.0"
-source = { git = "https://github.com/ThinkReality/tr-shared-lib.git?branch=main#2162f54c720b61ecec0edf07653bf6ea8ff3dade" }
+source = { git = "https://github.com/ThinkReality/tr-shared-lib.git?branch=main#e5aa4b75d833cebd6a6f4ebd80a10cd18862fa25" }
 dependencies = [
     { name = "pydantic-settings" },
 ]
