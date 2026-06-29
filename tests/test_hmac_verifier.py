@@ -35,7 +35,9 @@ class TestBuildCanonicalString:
         assert lines[3] == SAMPLE_HEADERS["X-User-Role"]
         assert lines[4] == SAMPLE_HEADERS["X-Tenant-ID"]
         assert lines[5] == SAMPLE_HEADERS["X-Correlation-ID"]
-        assert lines[6] == "2025-01-01T00:00:00+00:00"
+        assert lines[6] == ""
+        assert lines[7] == ""
+        assert lines[2 + len(SIGNED_HEADERS)] == "2025-01-01T00:00:00+00:00"
 
     def test_method_is_uppercased(self):
         result = build_canonical_string(
@@ -261,3 +263,49 @@ class TestVerifySignature:
             signature=sig,
             timestamp=ts,
         ) is True
+
+
+class TestSignedEmailAndPermissions:
+    """X-User-Email and X-User-Permissions are part of the signature contract."""
+
+    def _headers(self) -> dict[str, str]:
+        return {
+            **SAMPLE_HEADERS,
+            "X-User-Email": "agent@example.com",
+            "X-User-Permissions": "leads:read,leads:write",
+        }
+
+    def test_roundtrip_with_email_and_permissions(self):
+        ts = datetime.now(UTC).isoformat()
+        headers = self._headers()
+        sig = compute_signature(
+            method="GET", path="/test", headers=headers, secret=SECRET, timestamp=ts
+        )
+        assert verify_signature(
+            method="GET", path="/test", headers=headers,
+            secret=SECRET, signature=sig, timestamp=ts,
+        ) is True
+
+    def test_tampered_email_fails_verification(self):
+        ts = datetime.now(UTC).isoformat()
+        headers = self._headers()
+        sig = compute_signature(
+            method="GET", path="/test", headers=headers, secret=SECRET, timestamp=ts
+        )
+        headers["X-User-Email"] = "attacker@evil.test"
+        assert verify_signature(
+            method="GET", path="/test", headers=headers,
+            secret=SECRET, signature=sig, timestamp=ts,
+        ) is False
+
+    def test_tampered_permissions_fails_verification(self):
+        ts = datetime.now(UTC).isoformat()
+        headers = self._headers()
+        sig = compute_signature(
+            method="GET", path="/test", headers=headers, secret=SECRET, timestamp=ts
+        )
+        headers["X-User-Permissions"] = "leads:read,admin:all"
+        assert verify_signature(
+            method="GET", path="/test", headers=headers,
+            secret=SECRET, signature=sig, timestamp=ts,
+        ) is False

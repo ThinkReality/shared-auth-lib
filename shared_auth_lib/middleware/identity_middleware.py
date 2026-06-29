@@ -44,8 +44,6 @@ class IdentityExtractionMiddleware(BaseHTTPMiddleware):
     def _extract_identity(
         self, request: Request
     ) -> GatewayIdentityHeaders:
-        # request.headers is case-insensitive, so the canonical HttpHeader
-        # spelling matches regardless of how the gateway cased it on the wire.
         headers = request.headers
 
         user_id_str = headers.get(HttpHeader.USER_ID.value)
@@ -70,15 +68,16 @@ class IdentityExtractionMiddleware(BaseHTTPMiddleware):
                     f"{tenant_id_str}"
                 ) from exc
 
+        permissions_raw = headers.get(HttpHeader.USER_PERMISSIONS.value) or ""
+        permissions = [p for p in permissions_raw.split(",") if p]
+
         return GatewayIdentityHeaders(
             user_id=user_id,
             user_role=headers.get(HttpHeader.USER_ROLE.value),
             tenant_id=tenant_id,
-            # X-User-Email intentionally NOT extracted here.
-            # It is not in SIGNED_HEADERS and not set by the
-            # gateway, so a client could inject any value.
-            # The authoritative email comes from AuthContext
-            # (fetched from CRM-backend).
+            # Email and permissions are HMAC-signed (SIGNED_HEADERS) — safe to trust.
+            user_email=headers.get(HttpHeader.USER_EMAIL.value),
+            permissions=permissions,
             auth_provider=headers.get(
                 HttpHeader.AUTH_PROVIDER.value, "supabase"
             ),

@@ -15,12 +15,15 @@ from tr_shared.contracts.headers import HttpHeader
 
 
 class SignedHeader(StrEnum):
-    """Values derive from HttpHeader (SSOT). ORDER is the signing contract — do not reorder."""
+    """Values derive from HttpHeader (SSOT). ORDER is the signing contract — do not
+    reorder. New members are APPENDED at the end so existing signatures stay valid."""
 
     USER_ID = HttpHeader.USER_ID.value
     USER_ROLE = HttpHeader.USER_ROLE.value
     TENANT_ID = HttpHeader.TENANT_ID.value
     CORRELATION_ID = HttpHeader.CORRELATION_ID.value
+    USER_EMAIL = HttpHeader.USER_EMAIL.value
+    USER_PERMISSIONS = HttpHeader.USER_PERMISSIONS.value
 
 
 SIGNED_HEADERS: Final[list[str]] = [h.value for h in SignedHeader]

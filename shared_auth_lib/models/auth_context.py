@@ -82,6 +82,7 @@ class GatewayIdentityHeaders(BaseModel):
     user_role: str | None = None
     tenant_id: UUID | None = None
     user_email: str | None = None
+    permissions: list[str] = Field(default_factory=list)
     auth_provider: str | None = None
     correlation_id: str | None = None
     gateway_signature: str | None = None

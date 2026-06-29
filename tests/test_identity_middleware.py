@@ -39,6 +39,7 @@ def _create_app() -> FastAPI:
                 else None
             ),
             "user_email": identity.user_email,
+            "permissions": identity.permissions,
             "auth_provider": identity.auth_provider,
             "correlation_id": identity.correlation_id,
         }
@@ -58,6 +59,7 @@ class TestIdentityExtractionMiddleware:
                 "X-User-Role": "ADMIN",
                 "X-Tenant-ID": tid,
                 "X-User-Email": "test@example.com",
+                "X-User-Permissions": "user:read,listing:create",
                 "X-Auth-Provider": "supabase",
                 "X-Correlation-Id": "corr-123",
             },
@@ -67,8 +69,8 @@ class TestIdentityExtractionMiddleware:
         assert data["user_id"] == uid
         assert data["user_role"] == "ADMIN"
         assert data["tenant_id"] == tid
-        # X-User-Email is intentionally NOT extracted (unsigned header)
-        assert data["user_email"] is None
+        assert data["user_email"] == "test@example.com"
+        assert data["permissions"] == ["user:read", "listing:create"]
         assert data["auth_provider"] == "supabase"
         assert data["correlation_id"] == "corr-123"
 
@@ -81,6 +83,7 @@ class TestIdentityExtractionMiddleware:
         assert data["user_role"] is None
         assert data["tenant_id"] is None
         assert data["user_email"] is None
+        assert data["permissions"] == []
 
     def test_invalid_uuid_falls_back_to_empty_identity(self):
         client = TestClient(_create_app())
