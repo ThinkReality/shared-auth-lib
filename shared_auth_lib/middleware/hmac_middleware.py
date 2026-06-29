@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -31,6 +33,8 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         skip_paths: list[str] | None = None,
         tolerance_seconds: int = 30,
         dev_mode_bypass: bool | None = None,
+        redis_client: Any | None = None,
+        replay_protection_fail_open: bool = True,
     ) -> None:
         super().__init__(app)
         self.secret = secret
@@ -38,6 +42,8 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             skip_paths if skip_paths is not None else DEFAULT_SKIP_PATHS
         )
         self.tolerance_seconds = tolerance_seconds
+        self._redis = redis_client
+        self._replay_fail_open = replay_protection_fail_open
         if dev_mode_bypass is None:
             from shared_auth_lib.config import get_settings
 
@@ -56,6 +62,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         self._hmac_success: int = 0
         self._hmac_failure_missing: int = 0
         self._hmac_failure_invalid: int = 0
+        self._hmac_failure_replay: int = 0
 
     @property
     def hmac_stats(self) -> dict:
@@ -63,15 +70,21 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             self._hmac_success
             + self._hmac_failure_missing
             + self._hmac_failure_invalid
+            + self._hmac_failure_replay
         )
         failure_rate = 0.0
         if total > 0:
-            failures = self._hmac_failure_missing + self._hmac_failure_invalid
+            failures = (
+                self._hmac_failure_missing
+                + self._hmac_failure_invalid
+                + self._hmac_failure_replay
+            )
             failure_rate = (failures / total) * 100
         return {
             "success": self._hmac_success,
             "failure_missing_headers": self._hmac_failure_missing,
             "failure_invalid_signature": self._hmac_failure_invalid,
+            "failure_replay": self._hmac_failure_replay,
             "total": total,
             "failure_rate": round(failure_rate, 2),
         }
@@ -87,10 +100,8 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         if self._dev_mode_bypass:
-            # Skip HMAC verification. Identity is injected downstream in
-            # require_auth via build_dev_auth_context() — we can't inject
-            # it here reliably because Starlette's BaseHTTPMiddleware
-            # doesn't propagate scope/state mutations across boundaries.
+            # Identity injected downstream via require_auth — Starlette's
+            # BaseHTTPMiddleware doesn't propagate scope/state mutations here.
             return await call_next(request)
 
         signature = request.headers.get(HttpHeader.GATEWAY_SIGNATURE.value)
@@ -153,17 +164,59 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
                 },
             )
 
+        if self._redis is not None and await self._is_replay(signature, path, request):
+            self._hmac_failure_replay += 1
+            logger.warning(
+                "replayed_gateway_signature",
+                extra={
+                    "path": path,
+                    "correlation_id": request.headers.get(
+                        HttpHeader.CORRELATION_ID.value
+                    ),
+                    "metric_type": "hmac_verification",
+                    "result": "failure_replay",
+                },
+            )
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={
+                    "error": {
+                        "message": "Replayed gateway signature",
+                        "code": "HMAC_REPLAY",
+                    }
+                },
+            )
+
         self._hmac_success += 1
         return await call_next(request)
 
-    def _should_skip(self, path: str) -> bool:
-        """Check if the path should bypass HMAC verification.
+    async def _is_replay(
+        self, signature: str, path: str, request: Request
+    ) -> bool:
+        key = f"hmac_sig:{signature}"
+        try:
+            stored = await self._redis.set(
+                key, "1", nx=True, ex=self.tolerance_seconds
+            )
+            # redis-py SET NX: True = first sighting, None = already present (replay).
+            return not bool(stored)
+        except Exception as exc:
+            logger.warning(
+                "hmac_replay_check_failed",
+                extra={
+                    "path": path,
+                    "error": str(exc),
+                    "correlation_id": request.headers.get(
+                        HttpHeader.CORRELATION_ID.value
+                    ),
+                    "fail_open": self._replay_fail_open,
+                },
+            )
+            return not self._replay_fail_open
 
-        Paths ending with '/' are treated as prefix matches:
-          "/internal/" matches "/internal/status" but NOT "/internalize"
-        All other paths are treated as exact matches:
-          "/health" matches "/health" but NOT "/healthz"
-        """
+    def _should_skip(self, path: str) -> bool:
+        # Trailing '/' = prefix match (/internal/ → /internal/x, not /internalize).
+        # No trailing '/' = exact match only.
         for skip in self.skip_paths:
             if skip.endswith("/"):
                 if path.startswith(skip) or path == skip.rstrip("/"):

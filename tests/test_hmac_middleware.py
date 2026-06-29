@@ -1,5 +1,3 @@
-"""Tests for GatewayHMACMiddleware."""
-
 from datetime import UTC, datetime
 
 from fastapi import FastAPI
@@ -137,8 +135,84 @@ class TestGatewayHMACMiddleware:
         resp = client.get("/protected")
         assert resp.status_code == 200
 
+
+class _FakeAsyncRedis:
+    def __init__(self, *, raise_on_set: bool = False) -> None:
+        self._store: dict[str, str] = {}
+        self._raise_on_set = raise_on_set
+
+    async def set(self, name, value, nx=False, ex=None):  # noqa: ANN001
+        if self._raise_on_set:
+            raise ConnectionError("redis down")
+        if nx and name in self._store:
+            return None
+        self._store[name] = value
+        return True
+
+
+def _create_app_with_redis(
+    redis_client,
+    *,
+    replay_protection_fail_open: bool = True,
+):
+    app = FastAPI()
+    app.add_middleware(
+        GatewayHMACMiddleware,
+        secret=SECRET,
+        redis_client=redis_client,
+        replay_protection_fail_open=replay_protection_fail_open,
+    )
+
+    @app.get("/protected")
+    async def protected():
+        return {"status": "ok"}
+
+    return app
+
+
+class TestGatewayHMACReplayProtection:
+    def test_first_request_passes_then_replay_rejected(self):
+        client = TestClient(_create_app_with_redis(_FakeAsyncRedis()))
+        headers = _sign_headers()
+
+        first = client.get("/protected", headers=headers)
+        assert first.status_code == 200
+
+        replay = client.get("/protected", headers=headers)
+        assert replay.status_code == 403
+        assert replay.json()["error"]["code"] == "HMAC_REPLAY"
+
+    def test_distinct_signatures_not_treated_as_replay(self):
+        client = TestClient(_create_app_with_redis(_FakeAsyncRedis()))
+        assert client.get("/protected", headers=_sign_headers()).status_code == 200
+        # A second, independently-signed request has a different signature.
+        assert client.get("/protected", headers=_sign_headers()).status_code == 200
+
+    def test_no_redis_client_disables_dedup(self):
+        client = TestClient(_create_app())
+        headers = _sign_headers()
+        assert client.get("/protected", headers=headers).status_code == 200
+        assert client.get("/protected", headers=headers).status_code == 200
+
+    def test_redis_error_fails_open_by_default(self):
+        client = TestClient(_create_app_with_redis(_FakeAsyncRedis(raise_on_set=True)))
+        headers = _sign_headers()
+        # Redis unavailable → request still allowed (availability preserved).
+        assert client.get("/protected", headers=headers).status_code == 200
+
+    def test_redis_error_fails_closed_when_configured(self):
+        client = TestClient(
+            _create_app_with_redis(
+                _FakeAsyncRedis(raise_on_set=True),
+                replay_protection_fail_open=False,
+            )
+        )
+        headers = _sign_headers()
+        resp = client.get("/protected", headers=headers)
+        assert resp.status_code == 403
+        assert resp.json()["error"]["code"] == "HMAC_REPLAY"
+
     def test_forged_tenant_id_returns_403(self):
-        """Request signed with one tenant but forwarded with a different tenant is rejected."""
         client = TestClient(_create_app())
         headers = _sign_headers()
         # Forge the tenant ID after signing
@@ -154,7 +228,6 @@ class TestGatewayHMACMiddleware:
         assert resp.status_code == 403
 
     def test_internal_route_is_skipped(self):
-        """/internal/anything is skipped — service-to-service path."""
         app = _create_app()
 
         @app.get("/internal/auth-context/abc")
