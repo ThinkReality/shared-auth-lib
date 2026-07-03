@@ -4,7 +4,14 @@ from shared_auth_lib.permissions.admin import (
     ADMIN_READ,
 )
 from shared_auth_lib.permissions.finance import (
+    FINANCE_ADMIN,
+    FINANCE_EXPENSES_APPROVE,
+    FINANCE_EXPENSES_READ,
+    FINANCE_EXPENSES_WRITE,
     FINANCE_EXPORT,
+    FINANCE_INVOICES_READ,
+    FINANCE_INVOICES_SEND,
+    FINANCE_INVOICES_WRITE,
     FINANCE_VIEW,
     FINANCE_WRITE,
 )
@@ -57,7 +64,14 @@ __all__ = [
     # admin
     "ADMIN_READ",
     # finance
+    "FINANCE_ADMIN",
+    "FINANCE_EXPENSES_APPROVE",
+    "FINANCE_EXPENSES_READ",
+    "FINANCE_EXPENSES_WRITE",
     "FINANCE_EXPORT",
+    "FINANCE_INVOICES_READ",
+    "FINANCE_INVOICES_SEND",
+    "FINANCE_INVOICES_WRITE",
     "FINANCE_VIEW",
     "FINANCE_WRITE",
     # hr
