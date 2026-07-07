@@ -1,5 +1,3 @@
-"""Pydantic models for authorization context and gateway identity headers."""
-
 from typing import Any
 from uuid import UUID
 
@@ -7,29 +5,20 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 def _grant_matches(granted: str, required: str) -> bool:
-    """Whether a single granted permission satisfies ``required``.
-
-    The platform permission-matching contract:
-    - exact match;
-    - the global ``"*"`` grant;
-    - hierarchical prefix wildcard: ``lead:*`` grants ``lead:read`` and
-      ``a:b:*`` grants ``a:b:c``. The trailing colon is kept in the prefix so
-      ``lead:*`` does NOT grant ``leads:read``.
-    """
+    # Trailing colon kept in prefix so ``lead:*`` does NOT match ``leads:read``.
+    # Exact match | global "*" | hierarchical prefix: ``lead:*`` grants ``lead:read``.
     if granted == required or granted == "*":
         return True
     return granted.endswith(":*") and required.startswith(granted[:-1])
 
 
+def permission_granted(granted: list[str], required: str) -> bool:
+    """Platform-wide granted-side matcher — route all permission checks here, not per-service re-implementations."""
+    return any(_grant_matches(g, required) for g in granted)
+
+
 class AuthContext(BaseModel):
-    """Authorization context extracted from gateway headers + CRM-backend lookup.
-
-    Mirrors JWT custom claims from custom_claims.sql hook.
-    Cache key uses external_auth_id (Supabase Auth UUID).
-
-    Frozen to prevent accidental mutation after construction.
-    Use ``model_copy(update={...})`` to create modified copies.
-    """
+    """Auth context from gateway headers + CRM lookup. Mirrors custom_claims.sql JWT hook. Frozen."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -56,18 +45,10 @@ class AuthContext(BaseModel):
         return v if isinstance(v, list) else []
 
     def has_permission(self, permission: str) -> bool:
-        """Check if user has a specific permission.
-
-        Supports the global ``"*"`` grant and hierarchical prefix wildcards
-        (``lead:*`` grants ``lead:read``). This is the single platform-wide
-        matcher — services route every permission decision through here (and
-        through ``can()``/``require_permission``, which delegate to it), so the
-        old per-service wildcard re-implementations are no longer needed.
-        """
-        return any(_grant_matches(g, permission) for g in self.permissions)
+        """Single platform-wide matcher — delegates to permission_granted (wildcard-aware)."""
+        return permission_granted(self.permissions, permission)
 
     def has_any_role(self, roles: list[str]) -> bool:
-        """Check if user has any of the specified roles."""
         return any(role in self.roles for role in roles)
 
     def has_role(self, role: str) -> bool:
@@ -76,7 +57,6 @@ class AuthContext(BaseModel):
 
 
 class GatewayIdentityHeaders(BaseModel):
-    """Headers forwarded by API Gateway after JWT validation."""
 
     user_id: UUID | None = None
     user_role: str | None = None

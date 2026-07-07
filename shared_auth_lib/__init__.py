@@ -1,27 +1,6 @@
-"""Shared authorization library for ThinkRealty microservices.
-
-Public API re-exports for convenient downstream usage::
-
-    from shared_auth_lib import (
-        AuthContext,
-        GatewayIdentityHeaders,
-        GatewayHMACMiddleware,
-        IdentityExtractionMiddleware,
-        AuthContextClient,
-        require_auth,
-        require_permission,
-        require_role,
-        require_any_role,
-        optional_auth,
-        get_current_user,
-        init_auth_context_client,
-        compute_signature,
-        verify_signature,
-    )
-"""
-
 from shared_auth_lib.authz import (
     can,
+    permission_granted,
     require_capability,
 )
 from shared_auth_lib.constants import (
@@ -73,6 +52,7 @@ __all__ = [
     "IdentityExtractionMiddleware",
     "can",
     "compute_signature",
+    "permission_granted",
     "get_current_auth_context",
     "get_current_user",
     "get_gateway_identity",
