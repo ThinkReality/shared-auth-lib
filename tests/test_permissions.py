@@ -81,3 +81,19 @@ def test_finance_granular_constants_importable_from_permissions_package():
     assert FINANCE_INVOICES_WRITE == "finance:invoices:write"
     assert FINANCE_INVOICES_SEND == "finance:invoices:send"
     assert FINANCE_ADMIN == "finance:admin"
+
+
+def test_recruitment_granular_constants_importable_from_permissions_package():
+    from shared_auth_lib.permissions import (
+        HR_RECRUITMENT_APPLICATION_READ,
+        HR_RECRUITMENT_APPLICATION_UPDATE,
+        HR_RECRUITMENT_POSTING_CREATE,
+        HR_RECRUITMENT_POSTING_PUBLISH,
+        HR_RECRUITMENT_POSTING_UPDATE,
+    )
+
+    assert HR_RECRUITMENT_APPLICATION_READ == "recruitment:application:read"
+    assert HR_RECRUITMENT_APPLICATION_UPDATE == "recruitment:application:update"
+    assert HR_RECRUITMENT_POSTING_CREATE == "recruitment:posting:create"
+    assert HR_RECRUITMENT_POSTING_PUBLISH == "recruitment:posting:publish"
+    assert HR_RECRUITMENT_POSTING_UPDATE == "recruitment:posting:update"
