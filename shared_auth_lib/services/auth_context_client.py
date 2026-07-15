@@ -66,7 +66,6 @@ class AuthContextClient:
             failure_threshold=circuit_failure_threshold,
             recovery_timeout=circuit_recovery_timeout,
         )
-        # In-memory cache: {external_auth_id_str: (expires_at_monotonic, AuthContext)}
         self._local_cache: dict[str, tuple[float, AuthContext]] = {}
         self._local_cache_ttl = local_cache_ttl
         self._local_cache_max_size = local_cache_max_size
@@ -85,18 +84,6 @@ class AuthContextClient:
 
         When DEV_MODE_BYPASS is active, returns a canned AuthContext
         immediately — no cache, no HTTP call, no CRM-backend needed.
-
-        Args:
-            external_auth_id: The Supabase Auth UUID (JWT sub claim).
-            correlation_id: Optional correlation ID for distributed
-                tracing. Forwarded as X-Correlation-ID header.
-
-        Returns:
-            AuthContext instance with roles, permissions, tenant info.
-
-        Raises:
-            AuthContextNotFoundError: If user not found or service
-                unreachable.
         """
         if get_settings().DEV_MODE_BYPASS:
             from shared_auth_lib._dev_headers import build_dev_auth_context
@@ -105,7 +92,6 @@ class AuthContextClient:
 
         cache_key = str(external_auth_id)
 
-        # 1. Check in-memory cache first (0.001ms)
         cached = self._get_from_local_cache(cache_key)
         if cached is not None:
             logger.debug(
@@ -119,20 +105,14 @@ class AuthContextClient:
             extra={"external_auth_id": cache_key},
         )
 
-        # 2. Circuit breaker check
         if await self._circuit.is_open():
             logger.warning(
                 "auth_context_circuit_open",
                 extra={"external_auth_id": cache_key},
             )
-            raise AuthContextNotFoundError(
-                "Circuit open: CRM-backend unavailable"
-            )
+            raise AuthContextNotFoundError("Circuit open: CRM-backend unavailable")
 
-        # 3. HTTP call to CRM-backend
-        url = (
-            f"/api/v1/internal/auth-context/{external_auth_id}"
-        )
+        url = f"/api/v1/internal/auth-context/{external_auth_id}"
         headers: dict[str, str] = {
             SERVICE_TOKEN_HEADER: self._service_token,
         }
@@ -140,19 +120,18 @@ class AuthContextClient:
             headers[SignedHeader.CORRELATION_ID] = correlation_id
 
         try:
-            response = await self._client.get(
-                url, headers=headers
-            )
+            response = await self._client.get(url, headers=headers)
             response.raise_for_status()
             data = response.json()
-            # CRM-backend wraps responses in {"status": "...", "data": {...}}
-            # Extract the inner "data" dict if present.
-            if isinstance(data, dict) and "data" in data and isinstance(data["data"], dict):
+            # CRM-backend wraps responses in {"status": ..., "data": {...}}.
+            if (
+                isinstance(data, dict)
+                and "data" in data
+                and isinstance(data["data"], dict)
+            ):
                 data = data["data"]
             result = AuthContext(**data)
             await self._circuit.record_success()
-
-            # 4. Store in local cache for subsequent requests
             self._put_in_local_cache(cache_key, result)
 
             return result
@@ -160,8 +139,7 @@ class AuthContextClient:
             if exc.response.status_code == 404:
                 # 404 is a logical "not found" — not a service failure
                 raise AuthContextNotFoundError(
-                    f"AuthContext not found for "
-                    f"{external_auth_id}"
+                    f"AuthContext not found for {external_auth_id}"
                 ) from exc
             logger.error(
                 "auth_context_fetch_http_error",
@@ -172,8 +150,7 @@ class AuthContextClient:
             )
             await self._circuit.record_failure()
             raise AuthContextNotFoundError(
-                f"Failed to fetch AuthContext: "
-                f"HTTP {exc.response.status_code}"
+                f"Failed to fetch AuthContext: HTTP {exc.response.status_code}"
             ) from exc
         except httpx.TimeoutException as exc:
             logger.error(
@@ -182,8 +159,7 @@ class AuthContextClient:
             )
             await self._circuit.record_failure()
             raise AuthContextNotFoundError(
-                f"Timeout fetching AuthContext for "
-                f"{external_auth_id}"
+                f"Timeout fetching AuthContext for {external_auth_id}"
             ) from exc
         except Exception as exc:
             logger.error(
@@ -199,12 +175,7 @@ class AuthContextClient:
                 f"Failed to fetch AuthContext: {exc}"
             ) from exc
 
-    # ------------------------------------------------------------------
-    # In-memory cache helpers
-    # ------------------------------------------------------------------
-
     def _get_from_local_cache(self, key: str) -> AuthContext | None:
-        """Return cached AuthContext if present and not expired."""
         entry = self._local_cache.get(key)
         if entry is None:
             return None
@@ -215,9 +186,7 @@ class AuthContextClient:
         return auth_ctx
 
     def _put_in_local_cache(self, key: str, value: AuthContext) -> None:
-        """Store AuthContext in local cache with TTL."""
         if len(self._local_cache) >= self._local_cache_max_size:
-            # Evict the oldest entry (first inserted)
             oldest_key = next(iter(self._local_cache))
             del self._local_cache[oldest_key]
         self._local_cache[key] = (
@@ -225,26 +194,14 @@ class AuthContextClient:
             value,
         )
 
-    def invalidate_local_cache(
-        self, external_auth_id: UUID | None = None
-    ) -> None:
-        """Invalidate local cache entries.
-
-        Args:
-            external_auth_id: If provided, invalidate only that user.
-                If None, clear the entire local cache.
-        """
+    def invalidate_local_cache(self, external_auth_id: UUID | None = None) -> None:
+        """Invalidate one user's cache entry, or clear all if not given."""
         if external_auth_id is not None:
             self._local_cache.pop(str(external_auth_id), None)
         else:
             self._local_cache.clear()
 
-    # ------------------------------------------------------------------
-    # Lifecycle
-    # ------------------------------------------------------------------
-
     async def close(self) -> None:
-        """Close the underlying HTTP client and clear local cache."""
         self._local_cache.clear()
         await self._client.aclose()
 

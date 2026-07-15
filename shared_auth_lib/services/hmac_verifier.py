@@ -22,9 +22,7 @@ from shared_auth_lib.constants.headers import SIGNED_HEADERS
 TIMESTAMP_TOLERANCE_SECONDS: Final[int] = 30
 
 
-def _get_header_value(
-    headers: dict[str, str], name: str
-) -> str:
+def _get_header_value(headers: dict[str, str], name: str) -> str:
     """Case-insensitive header lookup.
 
     The gateway sets headers with mixed case (e.g. X-User-ID), but
@@ -67,9 +65,7 @@ def build_canonical_string(
         normalized_path,
     ]
     for header_name in SIGNED_HEADERS:
-        components.append(
-            _get_header_value(headers, header_name)
-        )
+        components.append(_get_header_value(headers, header_name))
     components.append(timestamp)
     return "\n".join(components)
 
@@ -90,9 +86,7 @@ def compute_signature(
     Returns:
         Hex-encoded HMAC-SHA256 signature.
     """
-    canonical = build_canonical_string(
-        method, path, headers, timestamp
-    )
+    canonical = build_canonical_string(method, path, headers, timestamp)
     return hmac.new(
         secret.encode("utf-8"),
         canonical.encode("utf-8"),
@@ -120,16 +114,12 @@ def verify_signature(
         True if signature is valid and timestamp is within tolerance.
     """
     try:
-        ts = datetime.fromisoformat(
-            timestamp.replace("Z", "+00:00")
-        )
+        ts = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
         now = datetime.now(UTC)
         if abs((now - ts).total_seconds()) > tolerance_seconds:
             return False
     except (ValueError, TypeError, AttributeError):
         return False
 
-    expected = compute_signature(
-        method, path, headers, secret, timestamp
-    )
+    expected = compute_signature(method, path, headers, secret, timestamp)
     return hmac.compare_digest(expected, signature)

@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          python-version-file: ".python-version"
+          enable-cache: true
+      - name: Sync deps
+        run: uv sync --locked
+      - name: Ruff lint
+        run: uv run ruff check shared_auth_lib/
+      - name: Ruff format
+        run: uv run ruff format --check shared_auth_lib/
+      # Zero-tolerance mypy: shared-auth-lib is fully typed (0 errors) and ships
+      # py.typed, so consumers type-check against it. Any NEW type error must fail
+      # here before it reaches the fleet — no baseline, no ratchet.
+      - name: Mypy
+        run: uv run mypy shared_auth_lib/
+      - name: Tests
+        run: uv run pytest

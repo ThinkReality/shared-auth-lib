@@ -17,7 +17,6 @@ logger = get_logger(__name__)
 
 
 class IdentityExtractionMiddleware(BaseHTTPMiddleware):
-
     def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
 
@@ -41,9 +40,7 @@ class IdentityExtractionMiddleware(BaseHTTPMiddleware):
 
         return await call_next(request)
 
-    def _extract_identity(
-        self, request: Request
-    ) -> GatewayIdentityHeaders:
+    def _extract_identity(self, request: Request) -> GatewayIdentityHeaders:
         headers = request.headers
 
         user_id_str = headers.get(HttpHeader.USER_ID.value)
@@ -78,9 +75,7 @@ class IdentityExtractionMiddleware(BaseHTTPMiddleware):
             # Email and permissions are HMAC-signed (SIGNED_HEADERS) — safe to trust.
             user_email=headers.get(HttpHeader.USER_EMAIL.value),
             permissions=permissions,
-            auth_provider=headers.get(
-                HttpHeader.AUTH_PROVIDER.value, "supabase"
-            ),
+            auth_provider=headers.get(HttpHeader.AUTH_PROVIDER.value, "supabase"),
             correlation_id=(
                 headers.get(HttpHeader.CORRELATION_ID.value)
                 or getattr(request.state, "correlation_id", None)
@@ -93,6 +88,4 @@ class IdentityExtractionMiddleware(BaseHTTPMiddleware):
 def get_gateway_identity(
     request: Request,
 ) -> GatewayIdentityHeaders:
-    return getattr(
-        request.state, "identity", GatewayIdentityHeaders()
-    )
+    return getattr(request.state, "identity", GatewayIdentityHeaders())

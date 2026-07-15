@@ -15,14 +15,6 @@ class AuthLibSettings(BaseSettings):
 
     Downstream services set these via environment variables.
     The AUTH_LIB_ prefix is stripped automatically by pydantic-settings.
-
-    Secret generation::
-
-        # Generate GATEWAY_SIGNING_SECRET (32-byte hex, must match API gateway):
-        openssl rand -hex 32
-
-        # Generate SERVICE_TOKEN (for S2S calls to CRM-backend):
-        openssl rand -base64 32
     """
 
     GATEWAY_SIGNING_SECRET: str
@@ -32,10 +24,7 @@ class AuthLibSettings(BaseSettings):
     GATEWAY_TIMESTAMP_TOLERANCE: int = 30
     AUTH_CONTEXT_REQUEST_TIMEOUT: float = 5.0
 
-    # ── Dev mode bypass ──
-    # When True, skips HMAC verification and injects a fake AuthContext
-    # so you can curl any service directly without the API gateway.
-    # Guarded: refuses to activate outside dev environments.
+    # Skips HMAC verification and injects a fake AuthContext; guarded to dev environments only.
     DEV_MODE_BYPASS: bool = False
     DEV_USER_ID: UUID = Field(default=_DEV_UUID)
     DEV_TENANT_ID: UUID = Field(default=_DEV_UUID)
@@ -56,8 +45,7 @@ class AuthLibSettings(BaseSettings):
         if self.ENVIRONMENT in ("production", "staging"):
             if not self.SERVICE_TOKEN or not self.SERVICE_TOKEN.strip():
                 raise ValueError(
-                    "AUTH_LIB_SERVICE_TOKEN must not be empty in "
-                    f"{self.ENVIRONMENT}"
+                    f"AUTH_LIB_SERVICE_TOKEN must not be empty in {self.ENVIRONMENT}"
                 )
             if not self.GATEWAY_SIGNING_SECRET.strip():
                 raise ValueError(

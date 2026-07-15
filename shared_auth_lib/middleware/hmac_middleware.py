@@ -25,7 +25,6 @@ DEFAULT_SKIP_PATHS: list[str] = [
 
 
 class GatewayHMACMiddleware(BaseHTTPMiddleware):
-
     def __init__(
         self,
         app: ASGIApp,
@@ -164,7 +163,9 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
                 },
             )
 
-        if self._redis is not None and await self._is_replay(signature, path, request):
+        if self._redis is not None and await self._is_replay(
+            signature, path, request
+        ):
             self._hmac_failure_replay += 1
             logger.warning(
                 "replayed_gateway_signature",
@@ -190,9 +191,9 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         self._hmac_success += 1
         return await call_next(request)
 
-    async def _is_replay(
-        self, signature: str, path: str, request: Request
-    ) -> bool:
+    async def _is_replay(self, signature: str, path: str, request: Request) -> bool:
+        # dispatch() only calls _is_replay when self._redis is not None.
+        assert self._redis is not None
         key = f"hmac_sig:{signature}"
         try:
             stored = await self._redis.set(

@@ -38,18 +38,13 @@ def build_dev_auth_context(
     """
     settings = get_settings()
 
-    user_id = (
-        _parse_uuid(_hget(request, "x-dev-user-id"))
-        or settings.DEV_USER_ID
-    )
+    user_id = _parse_uuid(_hget(request, "x-dev-user-id")) or settings.DEV_USER_ID
     tenant_id = (
-        _parse_uuid(_hget(request, "x-dev-tenant-id"))
-        or settings.DEV_TENANT_ID
+        _parse_uuid(_hget(request, "x-dev-tenant-id")) or settings.DEV_TENANT_ID
     )
     roles = _parse_csv(_hget(request, "x-dev-roles")) or list(settings.DEV_ROLES)
-    permissions = (
-        _parse_csv(_hget(request, "x-dev-permissions"))
-        or list(settings.DEV_PERMISSIONS)
+    permissions = _parse_csv(_hget(request, "x-dev-permissions")) or list(
+        settings.DEV_PERMISSIONS
     )
     email = _hget(request, "x-dev-email") or settings.DEV_EMAIL
     first_name = _hget(request, "x-dev-first-name") or "Dev"

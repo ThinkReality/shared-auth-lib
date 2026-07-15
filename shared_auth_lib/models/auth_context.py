@@ -57,7 +57,6 @@ class AuthContext(BaseModel):
 
 
 class GatewayIdentityHeaders(BaseModel):
-
     user_id: UUID | None = None
     user_role: str | None = None
     tenant_id: UUID | None = None

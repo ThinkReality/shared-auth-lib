@@ -11,9 +11,11 @@ Services must call ``tr_shared.logging.configure_logging()`` during
 startup to get structured JSON output in production.
 """
 
+from typing import cast
+
 import structlog
 
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:
     """Get a named structlog logger for shared-auth-lib modules."""
-    return structlog.get_logger(name)
+    return cast("structlog.stdlib.BoundLogger", structlog.get_logger(name))

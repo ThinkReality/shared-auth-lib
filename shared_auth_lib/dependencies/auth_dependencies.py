@@ -1,12 +1,4 @@
-"""FastAPI dependencies for authentication and authorization enforcement.
-
-Provides Depends()-compatible functions for route handlers:
-- require_auth: Requires authenticated user with active account.
-- require_permission: Requires a specific permission string.
-- require_role: Requires a specific role (includes hierarchy).
-- require_any_role: Requires any of a list of roles.
-- optional_auth: Returns AuthContext or None (no 401).
-"""
+"""FastAPI dependencies for authentication and authorization enforcement."""
 
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -84,23 +76,10 @@ def get_auth_context_client() -> AuthContextClient:
 
 async def require_auth(
     request: Request,
-    identity: GatewayIdentityHeaders = Depends(
-        get_gateway_identity
-    ),
-    client: AuthContextClient = Depends(
-        get_auth_context_client
-    ),
+    identity: GatewayIdentityHeaders = Depends(get_gateway_identity),
+    client: AuthContextClient = Depends(get_auth_context_client),
 ) -> AuthContext:
-    """Require an authenticated, active, non-suspended user.
-
-    Usage::
-
-        @router.get("/protected")
-        async def protected(
-            auth: AuthContext = Depends(require_auth),
-        ):
-            ...
-    """
+    """Require an authenticated, active, non-suspended user."""
     # DEV_MODE_BYPASS: return a canned admin context built from env vars
     # and (optionally) X-Dev-* request headers for per-request persona
     # overrides. Short-circuit here because Starlette's BaseHTTPMiddleware
@@ -117,7 +96,6 @@ async def require_auth(
         request.state.auth_context = auth_context
         return auth_context
 
-    # Extract source IP for audit trail
     _source_ip = (
         request.headers.get("x-forwarded-for", "").split(",")[0].strip()
         or request.headers.get("x-real-ip", "")
@@ -207,18 +185,7 @@ async def require_auth(
 def require_permission(
     permission: str,
 ) -> Callable[..., Awaitable[AuthContext]]:
-    """Dependency factory: require a specific permission.
-
-    Usage::
-
-        @router.delete("/users/{id}")
-        async def delete_user(
-            auth: AuthContext = Depends(
-                require_permission("user:delete")
-            ),
-        ):
-            ...
-    """
+    """Dependency factory: require a specific permission."""
 
     async def _checker(
         auth_context: AuthContext = Depends(require_auth),
@@ -232,9 +199,7 @@ def require_permission(
                     "user_id": str(auth_context.user_id),
                     "tenant_id": str(auth_context.tenant_id),
                     "required_permission": permission,
-                    "permissions_count": len(
-                        auth_context.permissions
-                    ),
+                    "permissions_count": len(auth_context.permissions),
                 },
             )
             raise HTTPException(
@@ -267,14 +232,6 @@ def require_role(
     The role is validated against ``PlatformRole`` when the dependency is
     constructed, so a bare or unknown role string fails at import/router
     registration rather than silently passing.
-
-    Usage::
-
-        @router.get("/admin/users")
-        async def list_users(
-            auth: AuthContext = Depends(require_role(PlatformRole.ADMIN)),
-        ):
-            ...
     """
     role = _validate_role(role)
 
@@ -297,16 +254,6 @@ def require_any_role(
     """Dependency factory: require any of the specified roles.
 
     Each role is validated against ``PlatformRole`` at construction time.
-
-    Usage::
-
-        @router.post("/leads/export")
-        async def export(
-            auth: AuthContext = Depends(
-                require_any_role([PlatformRole.ADMIN, PlatformRole.MANAGER])
-            ),
-        ):
-            ...
     """
     roles = [_validate_role(r) for r in roles]
 
@@ -316,10 +263,7 @@ def require_any_role(
         if not auth_context.has_any_role(roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"One of roles required: "
-                    f"{', '.join(roles)}"
-                ),
+                detail=(f"One of roles required: {', '.join(roles)}"),
             )
         return auth_context
 
@@ -327,25 +271,13 @@ def require_any_role(
 
 
 async def optional_auth(
-    identity: GatewayIdentityHeaders = Depends(
-        get_gateway_identity
-    ),
-    client: AuthContextClient = Depends(
-        get_auth_context_client
-    ),
+    identity: GatewayIdentityHeaders = Depends(get_gateway_identity),
+    client: AuthContextClient = Depends(get_auth_context_client),
 ) -> AuthContext | None:
     """Optional authentication dependency.
 
     Returns AuthContext if the user is authenticated, None otherwise.
     Does not raise 401 for unauthenticated requests.
-
-    Usage::
-
-        @router.get("/listings/featured")
-        async def featured(
-            auth: AuthContext | None = Depends(optional_auth),
-        ):
-            ...
     """
     if not identity.user_id:
         return None
@@ -365,10 +297,6 @@ async def get_current_user(
     """Standard get_current_user bridge for downstream services.
 
     Converts AuthContext into the dict format that route handlers expect.
-    Provides consistent field names across all services.
-
-    Returns:
-        dict with keys: id, sub, email, tenant_id, role, roles, permissions
     """
     return {
         "id": str(auth_context.user_id),
