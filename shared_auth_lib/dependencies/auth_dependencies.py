@@ -1,7 +1,8 @@
 """FastAPI dependencies for authentication and authorization enforcement."""
 
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, Protocol
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
 
@@ -15,9 +16,21 @@ from shared_auth_lib.models.auth_context import (
     AuthContext,
     GatewayIdentityHeaders,
 )
-from shared_auth_lib.services.auth_context_client import (
-    AuthContextClient,
-)
+
+
+class AuthContextProvider(Protocol):
+    """Structural contract for whatever resolves AuthContext for this process.
+
+    Satisfied by both the HTTP ``AuthContextClient`` and an in-process provider
+    (e.g. crm-core's ``InProcessAuthContextProvider``); the registry accepts
+    either. The first argument is positional-only so implementations are free to
+    name it ``external_auth_id`` or ``user_id``.
+    """
+
+    async def get_auth_context(
+        self, external_auth_id: UUID, /, correlation_id: str | None = None
+    ) -> AuthContext: ...
+
 
 logger = get_logger(__name__)
 
@@ -35,14 +48,14 @@ class _AuthClientRegistry:
     and prevents accidental sharing across unrelated app instances.
     """
 
-    _client: AuthContextClient | None = None
+    _client: AuthContextProvider | None = None
 
     @classmethod
-    def set(cls, client: AuthContextClient) -> None:
+    def set(cls, client: AuthContextProvider) -> None:
         cls._client = client
 
     @classmethod
-    def get(cls) -> AuthContextClient:
+    def get(cls) -> AuthContextProvider:
         if cls._client is None:
             raise RuntimeError(
                 "AuthContextClient not initialized. "
@@ -57,7 +70,7 @@ class _AuthClientRegistry:
 
 
 def init_auth_context_client(
-    client: AuthContextClient,
+    client: AuthContextProvider,
 ) -> None:
     """Initialize the AuthContextClient for this process.
 
@@ -66,7 +79,7 @@ def init_auth_context_client(
     _AuthClientRegistry.set(client)
 
 
-def get_auth_context_client() -> AuthContextClient:
+def get_auth_context_client() -> AuthContextProvider:
     """Return the initialized AuthContextClient.
 
     Raises RuntimeError if init_auth_context_client() was not called.
@@ -77,14 +90,11 @@ def get_auth_context_client() -> AuthContextClient:
 async def require_auth(
     request: Request,
     identity: GatewayIdentityHeaders = Depends(get_gateway_identity),
-    client: AuthContextClient = Depends(get_auth_context_client),
+    client: AuthContextProvider = Depends(get_auth_context_client),
 ) -> AuthContext:
     """Require an authenticated, active, non-suspended user."""
-    # DEV_MODE_BYPASS: return a canned admin context built from env vars
-    # and (optionally) X-Dev-* request headers for per-request persona
-    # overrides. Short-circuit here because Starlette's BaseHTTPMiddleware
-    # doesn't reliably propagate scope/state mutations across middleware
-    # boundaries, so we can't inject identity upstream.
+    # DEV_MODE_BYPASS: canned admin context from env/X-Dev-* headers.
+    # Short-circuit here — BaseHTTPMiddleware can't reliably propagate scope/state upstream.
     from shared_auth_lib._dev_headers import build_dev_auth_context
     from shared_auth_lib.config import get_settings
 
@@ -272,7 +282,7 @@ def require_any_role(
 
 async def optional_auth(
     identity: GatewayIdentityHeaders = Depends(get_gateway_identity),
-    client: AuthContextClient = Depends(get_auth_context_client),
+    client: AuthContextProvider = Depends(get_auth_context_client),
 ) -> AuthContext | None:
     """Optional authentication dependency.
 
