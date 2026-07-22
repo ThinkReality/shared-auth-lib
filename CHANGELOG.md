@@ -5,6 +5,27 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-07-22
+
+### Added
+- `permissions/auth.py` — auth-domain permission strings, feature-prefixed
+  `auth:*` (user/role/credential/credential_type/email + system/audit) so every
+  prefix is a `Feature`-spine member (D-PERMSCHEME). crm-core `AuthPermission`
+  enum values migrate to these in P2.
+- Media billing/usage/quota constants (`media:billing:read`, `media:usage:read`,
+  `media:quota:read`, `media:quota:manage`); `admin:webhook:replay`.
+- `permissions/dld.py` owner constants under the `dld` Feature
+  (`dld:owners:read/contact/identity`, previously off-spine `owners:*`).
+- `permissions/scraping.py` `PROPERTY_SCRAPING_CACHE_FLUSH`
+  (`property:scraping_cache:flush`, previously off-spine `scraping:cache:flush`).
+- `permissions/_registry.py` — `PermissionDef` + `ALL_PERMISSIONS` seedable
+  registry (name/resource/action/description) + `permission_names()`. crm-core
+  seeds the `auth_permissions` catalog from this in P2.
+
+### Changed
+- Auth permission strings canonicalised to the `auth:*` Feature prefix. Consumers
+  (crm-core enum values, tr-realty-data-hub enforcement) migrate in P2/P4.
+
 ## [0.5.0] - 2026-06-13
 
 ### Added

@@ -1,7 +1,20 @@
 """Shared permission constants (per-feature modules)."""
 
+from shared_auth_lib.permissions._registry import (
+    ALL_PERMISSIONS,
+    PermissionDef,
+    permission_names,
+)
 from shared_auth_lib.permissions.admin import (
     ADMIN_READ,
+    ADMIN_WEBHOOK_REPLAY,
+)
+from shared_auth_lib.permissions.dld import (
+    DLD_DATASETS_UPLOAD,
+    DLD_OWNERS_CONTACT,
+    DLD_OWNERS_IDENTITY,
+    DLD_OWNERS_READ,
+    DLD_SYNC_MANAGE,
 )
 from shared_auth_lib.permissions.finance import (
     FINANCE_ADMIN,
@@ -46,10 +59,17 @@ from shared_auth_lib.permissions.listing import (
     LISTING_VIEW,
 )
 from shared_auth_lib.permissions.media import (
+    MEDIA_BILLING_READ,
     MEDIA_DELETE,
+    MEDIA_QUOTA_MANAGE,
+    MEDIA_QUOTA_READ,
     MEDIA_UPDATE,
     MEDIA_UPLOAD,
+    MEDIA_USAGE_READ,
     MEDIA_VIEW,
+)
+from shared_auth_lib.permissions.scraping import (
+    PROPERTY_SCRAPING_CACHE_FLUSH,
 )
 from shared_auth_lib.permissions.lms import (
     LMS_AGENT_VIEW_STATS,
@@ -66,8 +86,21 @@ from shared_auth_lib.permissions.task import (
 )
 
 __all__ = [
+    # registry
+    "ALL_PERMISSIONS",
+    "PermissionDef",
+    "permission_names",
     # admin
     "ADMIN_READ",
+    "ADMIN_WEBHOOK_REPLAY",
+    # dld
+    "DLD_DATASETS_UPLOAD",
+    "DLD_OWNERS_CONTACT",
+    "DLD_OWNERS_IDENTITY",
+    "DLD_OWNERS_READ",
+    "DLD_SYNC_MANAGE",
+    # property (realty scraping area)
+    "PROPERTY_SCRAPING_CACHE_FLUSH",
     # finance
     "FINANCE_ADMIN",
     "FINANCE_EXPENSES_APPROVE",
@@ -107,9 +140,13 @@ __all__ = [
     "LISTING_UPDATE",
     "LISTING_VIEW",
     # media
+    "MEDIA_BILLING_READ",
     "MEDIA_DELETE",
+    "MEDIA_QUOTA_MANAGE",
+    "MEDIA_QUOTA_READ",
     "MEDIA_UPDATE",
     "MEDIA_UPLOAD",
+    "MEDIA_USAGE_READ",
     "MEDIA_VIEW",
     # lms
     "LMS_AGENT_VIEW_STATS",

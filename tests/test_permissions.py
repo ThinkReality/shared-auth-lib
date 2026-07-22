@@ -15,8 +15,14 @@ from tr_shared.contracts.taxonomy import Feature
 # be renamed without a permission-row migration. Wildcards ("*") are grant-side
 # data, never declared as constants.
 PREFERRED_ACTIONS = {
-    "view", "create", "edit", "delete", "export",
-    "sync", "approve", "assign",
+    "view",
+    "create",
+    "edit",
+    "delete",
+    "export",
+    "sync",
+    "approve",
+    "assign",
 }
 _FEATURES = {f.value for f in Feature}
 _SCHEME = re.compile(r"^[a-z]+(:[a-z_]+){1,2}$")
@@ -24,6 +30,8 @@ _SCHEME = re.compile(r"^[a-z]+(:[a-z_]+){1,2}$")
 
 def _iter_permission_modules():
     for info in pkgutil.iter_modules(permissions_pkg.__path__):
+        if info.name.startswith("_"):
+            continue
         yield importlib.import_module(f"shared_auth_lib.permissions.{info.name}")
 
 
@@ -97,3 +105,90 @@ def test_recruitment_granular_constants_importable_from_permissions_package():
     assert HR_RECRUITMENT_POSTING_CREATE == "recruitment:posting:create"
     assert HR_RECRUITMENT_POSTING_PUBLISH == "recruitment:posting:publish"
     assert HR_RECRUITMENT_POSTING_UPDATE == "recruitment:posting:update"
+
+
+def test_media_billing_usage_quota_constants_present():
+    from shared_auth_lib.permissions import media
+
+    assert media.MEDIA_BILLING_READ == "media:billing:read"
+    assert media.MEDIA_USAGE_READ == "media:usage:read"
+    assert media.MEDIA_QUOTA_READ == "media:quota:read"
+    assert media.MEDIA_QUOTA_MANAGE == "media:quota:manage"
+
+
+def test_admin_webhook_replay_constant_present():
+    from shared_auth_lib.permissions import admin
+
+    assert admin.ADMIN_WEBHOOK_REPLAY == "admin:webhook:replay"
+
+
+def test_auth_module_constants_match_values():
+    from shared_auth_lib.permissions import auth
+
+    expected = {
+        "SYSTEM_ADMIN": "auth:system:admin",
+        "AUDIT_READ": "auth:audit:read",
+        "USER_CREATE": "auth:user:create",
+        "USER_MANAGE": "auth:user:manage",
+        "USER_SUSPEND": "auth:user:suspend",
+        "ROLE_CREATE": "auth:role:create",
+        "ROLE_ASSIGN": "auth:role:assign",
+        "CREDENTIAL_CREATE": "auth:credential:create",
+        "CREDENTIAL_READ": "auth:credential:read",
+        "CREDENTIAL_UPDATE": "auth:credential:update",
+        "CREDENTIAL_DELETE": "auth:credential:delete",
+        "CREDENTIAL_READ_SECRET": "auth:credential:read_secret",
+        "CREDENTIAL_TYPE_CREATE": "auth:credential_type:create",
+        "CREDENTIAL_TYPE_READ": "auth:credential_type:read",
+        "CREDENTIAL_TYPE_UPDATE": "auth:credential_type:update",
+        "CREDENTIAL_TYPE_DELETE": "auth:credential_type:delete",
+        "EMAIL_SEND": "auth:email:send",
+        "EMAIL_BULK_SEND": "auth:email:bulk_send",
+        "EMAIL_READ_TEMPLATES": "auth:email:read_templates",
+        "EMAIL_READ_STATS": "auth:email:read_stats",
+        "EMAIL_READ_PROVIDERS": "auth:email:read_providers",
+        "EMAIL_READ_HEALTH": "auth:email:read_health",
+        "EMAIL_READ_LOGS": "auth:email:read_logs",
+    }
+    for name, value in expected.items():
+        assert getattr(auth, name) == value
+    assert set(auth.__all__) == set(expected)
+
+
+def test_dld_and_scraping_modules():
+    from shared_auth_lib.permissions import dld, scraping
+
+    assert dld.DLD_SYNC_MANAGE == "dld:sync:manage"
+    assert dld.DLD_DATASETS_UPLOAD == "dld:datasets:upload"
+    assert dld.DLD_OWNERS_READ == "dld:owners:read"
+    assert dld.DLD_OWNERS_CONTACT == "dld:owners:contact"
+    assert dld.DLD_OWNERS_IDENTITY == "dld:owners:identity"
+    assert scraping.PROPERTY_SCRAPING_CACHE_FLUSH == "property:scraping_cache:flush"
+    assert set(dld.__all__) == {
+        "DLD_SYNC_MANAGE",
+        "DLD_DATASETS_UPLOAD",
+        "DLD_OWNERS_READ",
+        "DLD_OWNERS_CONTACT",
+        "DLD_OWNERS_IDENTITY",
+    }
+    assert set(scraping.__all__) == {"PROPERTY_SCRAPING_CACHE_FLUSH"}
+
+
+def test_package_root_exports_registry_and_new_constants():
+    import shared_auth_lib.permissions as pkg
+
+    assert hasattr(pkg, "ALL_PERMISSIONS")
+    assert hasattr(pkg, "PermissionDef")
+    assert hasattr(pkg, "permission_names")
+    assert pkg.MEDIA_BILLING_READ == "media:billing:read"
+    assert pkg.MEDIA_QUOTA_MANAGE == "media:quota:manage"
+    assert pkg.ADMIN_WEBHOOK_REPLAY == "admin:webhook:replay"
+    assert pkg.DLD_SYNC_MANAGE == "dld:sync:manage"
+    assert pkg.DLD_OWNERS_READ == "dld:owners:read"
+    assert pkg.PROPERTY_SCRAPING_CACHE_FLUSH == "property:scraping_cache:flush"
+
+
+def test_package_all_has_no_duplicates():
+    import shared_auth_lib.permissions as pkg
+
+    assert len(pkg.__all__) == len(set(pkg.__all__))
