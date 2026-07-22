@@ -84,6 +84,7 @@ from shared_auth_lib.permissions.lead import (
     LEAD_VIEW,
 )
 from shared_auth_lib.permissions.listing import (
+    LISTING_APPROVE,
     LISTING_CREATE,
     LISTING_DELETE,
     LISTING_METRICS_READ,
@@ -196,6 +197,7 @@ __all__ = [
     "LEAD_UPDATE",
     "LEAD_VIEW",
     # listing
+    "LISTING_APPROVE",
     "LISTING_CREATE",
     "LISTING_DELETE",
     "LISTING_METRICS_READ",

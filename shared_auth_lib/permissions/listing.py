@@ -10,9 +10,11 @@ LISTING_VIEW = "listing:read"
 LISTING_CREATE = "listing:create"
 LISTING_UPDATE = "listing:update"
 LISTING_DELETE = "listing:delete"
+LISTING_APPROVE = "listing:approve"
 LISTING_METRICS_READ = "listing:metrics:read"
 
 __all__ = [
+    "LISTING_APPROVE",
     "LISTING_CREATE",
     "LISTING_DELETE",
     "LISTING_METRICS_READ",
