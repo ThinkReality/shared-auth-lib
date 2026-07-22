@@ -28,7 +28,7 @@ class AuthLibSettings(BaseSettings):
     DEV_MODE_BYPASS: bool = False
     DEV_USER_ID: UUID = Field(default=_DEV_UUID)
     DEV_TENANT_ID: UUID = Field(default=_DEV_UUID)
-    DEV_ROLES: list[str] = Field(default=["ADMIN"])
+    DEV_ROLES: list[str] = Field(default=["admin"])
     DEV_PERMISSIONS: list[str] = Field(default=["*"])
     DEV_EMAIL: str = "dev@thinkrealty.local"
 

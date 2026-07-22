@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
 
-from shared_auth_lib.constants.roles import PlatformRole
+from shared_auth_lib.constants.roles import SystemRole
 from shared_auth_lib.exceptions import AuthContextNotFoundError
 from shared_auth_lib.logging import get_logger
 from shared_auth_lib.middleware.identity_middleware import (
@@ -221,27 +221,28 @@ def require_permission(
     return _checker
 
 
-def _validate_role(role: PlatformRole | str) -> str:
-    """Normalize a role arg to its string value, rejecting non-PlatformRole
+def _validate_role(role: SystemRole | str) -> str:
+    """Normalize a role arg to its string value, rejecting non-SystemRole
     values at dependency-construction time (router registration), not at request
-    time. Accepts a ``PlatformRole`` or its string value."""
+    time. Role-name gates may reference ONLY the two system roles — feature
+    access is permission-based (require_permission)."""
     try:
-        return str(PlatformRole(str(role)))
+        return str(SystemRole(str(role)))
     except ValueError as exc:
-        valid = ", ".join(r.value for r in PlatformRole)
+        valid = ", ".join(r.value for r in SystemRole)
         raise ValueError(
-            f"Unknown role {role!r}; must be a PlatformRole. Valid: {valid}"
+            f"Unknown role {role!r}; must be a SystemRole. Valid: {valid}"
         ) from exc
 
 
 def require_role(
-    role: PlatformRole | str,
+    role: SystemRole | str,
 ) -> Callable[..., Awaitable[AuthContext]]:
     """Dependency factory: require a specific role (or higher via hierarchy).
 
-    The role is validated against ``PlatformRole`` when the dependency is
-    constructed, so a bare or unknown role string fails at import/router
-    registration rather than silently passing.
+    The role is validated against ``SystemRole`` when the dependency is
+    constructed, so a bare or unknown SystemRole string fails at
+    import/router registration rather than silently passing.
     """
     role = _validate_role(role)
 
@@ -259,11 +260,11 @@ def require_role(
 
 
 def require_any_role(
-    roles: list[PlatformRole | str],
+    roles: list[SystemRole | str],
 ) -> Callable[..., Awaitable[AuthContext]]:
-    """Dependency factory: require any of the specified roles.
+    """Dependency factory: require any of the specified SystemRoles.
 
-    Each role is validated against ``PlatformRole`` at construction time.
+    Each role is validated against ``SystemRole`` at construction time.
     """
     roles = [_validate_role(r) for r in roles]
 
