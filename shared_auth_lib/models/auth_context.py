@@ -49,10 +49,17 @@ class AuthContext(BaseModel):
         return permission_granted(self.permissions, permission)
 
     def has_any_role(self, roles: list[str]) -> bool:
+        """Exact membership: True if any of ``roles`` is DIRECTLY in ``self.roles``.
+        Does NOT widen via ``role_hierarchy`` — use for scope gates (e.g. the
+        super_admin cross-tenant gate) that must not be satisfied by an inherited
+        ancestor role."""
         return any(role in self.roles for role in roles)
 
     def has_role(self, role: str) -> bool:
-        """Check if user has a specific role (includes hierarchy)."""
+        """Inherited membership: True if ``role`` is held directly OR appears in
+        ``role_hierarchy`` (an ancestor via parent_role_id). Use when role
+        inheritance should grant access. For an exact, non-widening check use
+        ``has_any_role([role])``."""
         return role in self.roles or role in self.role_hierarchy
 
 

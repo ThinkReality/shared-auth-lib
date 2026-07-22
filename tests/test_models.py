@@ -17,11 +17,11 @@ class TestAuthContext:
             user_id=uuid4(),
             email="test@thinkrealty.ae",
             tenant_id=uuid4(),
-            roles=["ADMIN", "AGENT"],
+            roles=["admin", "sales_agent"],
             permissions=["user:read", "listing:create"],
             is_active=True,
             is_suspended=False,
-            role_hierarchy=["ADMIN", "MANAGER", "AGENT"],
+            role_hierarchy=["admin"],
         )
         defaults.update(overrides)
         return AuthContext(**defaults)
@@ -36,26 +36,29 @@ class TestAuthContext:
 
     def test_has_role_direct(self):
         ctx = self._make_context()
-        assert ctx.has_role("ADMIN") is True
+        assert ctx.has_role("admin") is True
 
     def test_has_role_via_hierarchy(self):
-        ctx = self._make_context(roles=["AGENT"])
-        assert ctx.has_role("MANAGER") is True
+        ctx = self._make_context(
+            roles=["sales_agent"], role_hierarchy=["sales_manager"]
+        )
+        assert ctx.has_role("sales_manager") is True
+        assert ctx.has_any_role(["sales_manager"]) is False
 
     def test_has_role_missing(self):
         ctx = self._make_context(
-            roles=["AGENT"], role_hierarchy=["AGENT"]
+            roles=["sales_agent"], role_hierarchy=["sales_agent"]
         )
-        assert ctx.has_role("SUPER_ADMIN") is False
+        assert ctx.has_role("super_admin") is False
 
     def test_has_any_role_true(self):
         ctx = self._make_context()
-        assert ctx.has_any_role(["VIEWER", "ADMIN"]) is True
+        assert ctx.has_any_role(["sales_lead", "admin"]) is True
 
     def test_has_any_role_false(self):
-        ctx = self._make_context(roles=["AGENT"])
+        ctx = self._make_context(roles=["sales_agent"])
         assert (
-            ctx.has_any_role(["SUPER_ADMIN", "OWNER"]) is False
+            ctx.has_any_role(["super_admin", "owner"]) is False
         )
 
     def test_ensure_list_validator_with_none(self):

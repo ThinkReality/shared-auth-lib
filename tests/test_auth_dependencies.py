@@ -41,11 +41,11 @@ MOCK_AUTH_CONTEXT = AuthContext(
     user_id=uuid4(),
     email="test@thinkrealty.ae",
     tenant_id=TENANT_ID,
-    roles=["ADMIN", "AGENT"],
+    roles=["admin", "sales_agent"],
     permissions=["user:read", "listing:create", "listing:read"],
     is_active=True,
     is_suspended=False,
-    role_hierarchy=["ADMIN", "MANAGER", "AGENT"],
+    role_hierarchy=["admin"],
 )
 
 
@@ -98,14 +98,14 @@ def _create_app(mock_client: AsyncMock) -> FastAPI:
 
     @app.get("/require-role")
     async def route_require_role(
-        auth: AuthContext = Depends(require_role("ADMIN")),
+        auth: AuthContext = Depends(require_role("admin")),
     ):
         return {"user_id": str(auth.user_id)}
 
     @app.get("/require-missing-role")
     async def route_require_missing_role(
         auth: AuthContext = Depends(
-            require_role("SUPER_ADMIN")
+            require_role("super_admin")
         ),
     ):
         return {"user_id": str(auth.user_id)}
@@ -113,7 +113,7 @@ def _create_app(mock_client: AsyncMock) -> FastAPI:
     @app.get("/require-any-role")
     async def route_require_any_role(
         auth: AuthContext = Depends(
-            require_any_role(["MANAGER", "ADMIN"])
+            require_any_role(["super_admin", "admin"])
         ),
     ):
         return {"user_id": str(auth.user_id)}
@@ -224,7 +224,7 @@ class TestRequireRole:
             headers={"X-User-Id": str(USER_ID)},
         )
         assert resp.status_code == 403
-        assert "SUPER_ADMIN" in resp.json()["detail"]
+        assert "super_admin" in resp.json()["detail"]
 
 
 class TestRequireAnyRole:

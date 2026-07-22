@@ -224,7 +224,8 @@ def require_permission(
 def _validate_role(role: SystemRole | str) -> str:
     """Normalize a role arg to its string value, rejecting non-SystemRole
     values at dependency-construction time (router registration), not at request
-    time. Accepts a ``SystemRole`` or its string value."""
+    time. Role-name gates may reference ONLY the two system roles — feature
+    access is permission-based (require_permission)."""
     try:
         return str(SystemRole(str(role)))
     except ValueError as exc:
@@ -240,8 +241,8 @@ def require_role(
     """Dependency factory: require a specific role (or higher via hierarchy).
 
     The role is validated against ``SystemRole`` when the dependency is
-    constructed, so a bare or unknown role string fails at import/router
-    registration rather than silently passing.
+    constructed, so a bare or unknown SystemRole string fails at
+    import/router registration rather than silently passing.
     """
     role = _validate_role(role)
 
@@ -261,7 +262,7 @@ def require_role(
 def require_any_role(
     roles: list[SystemRole | str],
 ) -> Callable[..., Awaitable[AuthContext]]:
-    """Dependency factory: require any of the specified roles.
+    """Dependency factory: require any of the specified SystemRoles.
 
     Each role is validated against ``SystemRole`` at construction time.
     """
