@@ -1,44 +1,21 @@
-"""Canonical platform role names — the single source of truth.
+"""Canonical platform SYSTEM roles — the single source of truth.
 
-Services use this enum, never inline role-string literals. These are the 9
-SYSTEM roles; business/display roles are data, not members. Values match the
-strings carried in AuthContext.roles (e.g. "ADMIN"), so PlatformRole.ADMIN is a
-drop-in for require_role("ADMIN"). The eventual per-tenant custom-RBAC overhaul
-keeps these names; only the resolution mechanism changes.
+Only two platform-fixed roles exist: ``super_admin`` and ``admin`` (lowercase).
+Every other role is a per-tenant DYNAMIC role stored as data (``auth_roles``),
+never a member here. Values are lowercase and match the strings carried in
+``AuthContext.roles`` on the wire. A role NAME is checked in exactly one place —
+tenant scope (``has_role(SystemRole.SUPER_ADMIN)``); all feature access is
+permission-based.
 """
 
 from enum import StrEnum
 
 
-class PlatformRole(StrEnum):
-    SUPER_ADMIN = "SUPER_ADMIN"
-    ADMIN = "ADMIN"
-    MANAGER = "MANAGER"
-    SENIOR_AGENT = "SENIOR_AGENT"
-    AGENT = "AGENT"
-    JUNIOR_AGENT = "JUNIOR_AGENT"
-    VIEWER = "VIEWER"
-    CONTENT_CREATOR = "CONTENT_CREATOR"
-    PHOTOGRAPHER = "PHOTOGRAPHER"
+class SystemRole(StrEnum):
+    SUPER_ADMIN = "super_admin"
+    ADMIN = "admin"
 
 
-ADMIN_ROLES: frozenset[PlatformRole] = frozenset(
-    {PlatformRole.SUPER_ADMIN, PlatformRole.ADMIN, PlatformRole.MANAGER}
-)
-
-AGENT_ROLES: frozenset[PlatformRole] = frozenset(
-    {PlatformRole.SENIOR_AGENT, PlatformRole.AGENT, PlatformRole.JUNIOR_AGENT}
-)
-
-# Coarse seniority ordering (distinct ranks). Used for hierarchy comparisons.
-ROLE_RANK: dict[PlatformRole, int] = {
-    PlatformRole.SUPER_ADMIN: 100,
-    PlatformRole.ADMIN: 90,
-    PlatformRole.MANAGER: 80,
-    PlatformRole.SENIOR_AGENT: 70,
-    PlatformRole.AGENT: 60,
-    PlatformRole.JUNIOR_AGENT: 50,
-    PlatformRole.CONTENT_CREATOR: 40,
-    PlatformRole.PHOTOGRAPHER: 30,
-    PlatformRole.VIEWER: 10,
-}
+# The platform-admin tier. Membership == tenant-admin / control-plane access.
+# Replaces the old ADMIN_ROLES (which wrongly included the now-dynamic MANAGER).
+SYSTEM_ROLES: frozenset[SystemRole] = frozenset(SystemRole)

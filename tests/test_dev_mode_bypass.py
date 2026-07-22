@@ -112,7 +112,7 @@ class TestBuildDevAuthContextEnvDefaults:
         assert isinstance(ctx, AuthContext)
         assert ctx.user_id == _DEV_UUID
         assert ctx.tenant_id == _DEV_UUID
-        assert ctx.roles == ["ADMIN"]
+        assert ctx.roles == ["admin"]
         assert ctx.permissions == ["*"]
         assert ctx.email == "dev@thinkrealty.local"
         assert ctx.auth_provider == "dev"
@@ -137,7 +137,7 @@ class TestBuildDevAuthContextEnvDefaults:
             "AUTH_LIB_DEV_USER_ID": custom_id,
             "AUTH_LIB_DEV_TENANT_ID": custom_id,
             "AUTH_LIB_DEV_EMAIL": "custom@test.local",
-            "AUTH_LIB_DEV_ROLES": '["MANAGER"]',
+            "AUTH_LIB_DEV_ROLES": '["sales_manager"]',
             "AUTH_LIB_DEV_PERMISSIONS": '["listing:read","listing:update"]',
         }
         with patch.dict(os.environ, env, clear=False):
@@ -148,7 +148,7 @@ class TestBuildDevAuthContextEnvDefaults:
 
         assert str(ctx.user_id) == custom_id
         assert ctx.email == "custom@test.local"
-        assert ctx.roles == ["MANAGER"]
+        assert ctx.roles == ["sales_manager"]
         assert ctx.permissions == ["listing:read", "listing:update"]
         get_settings.cache_clear()
 
@@ -165,10 +165,10 @@ class TestBuildDevAuthContextHeaderOverrides:
 
             get_settings.cache_clear()
             ctx = build_dev_auth_context(
-                _make_request({"X-Dev-Roles": "AGENT,MANAGER"})
+                _make_request({"X-Dev-Roles": "admin,sales_manager"})
             )
 
-        assert ctx.roles == ["AGENT", "MANAGER"]
+        assert ctx.roles == ["admin", "sales_manager"]
         # User ID stays at env default (no override sent)
         assert ctx.user_id == _DEV_UUID
         get_settings.cache_clear()

@@ -4,10 +4,8 @@ from shared_auth_lib.authz import (
     require_capability,
 )
 from shared_auth_lib.constants import (
-    ADMIN_ROLES,
-    AGENT_ROLES,
-    ROLE_RANK,
-    PlatformRole,
+    SYSTEM_ROLES,
+    SystemRole,
 )
 from shared_auth_lib.dependencies.auth_dependencies import (
     get_current_auth_context,
@@ -41,12 +39,10 @@ from shared_auth_lib.services.hmac_verifier import (
 __version__ = "0.9.2"
 
 __all__ = [
-    "ADMIN_ROLES",
-    "AGENT_ROLES",
+    "SYSTEM_ROLES",
+    "SystemRole",
     "AuthContext",
     "AuthContextClient",
-    "PlatformRole",
-    "ROLE_RANK",
     "GatewayHMACMiddleware",
     "GatewayIdentityHeaders",
     "IdentityExtractionMiddleware",
