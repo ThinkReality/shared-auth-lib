@@ -5,6 +5,15 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2026-07-22
+
+### Changed
+- `permissions.auth` constants renamed to `AUTH_*` (e.g. `USER_CREATE` →
+  `AUTH_USER_CREATE`) — string values unchanged (`auth:*`) — and flat-exported
+  from `shared_auth_lib.permissions`, so `auth` matches every other domain
+  module's naming + export convention. Consumers import
+  `from shared_auth_lib.permissions import AUTH_USER_CREATE`.
+
 ## [0.9.0] - 2026-07-22
 
 ### Added
