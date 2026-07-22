@@ -112,3 +112,36 @@ def test_admin_webhook_replay_constant_present():
     from shared_auth_lib.permissions import admin
 
     assert admin.ADMIN_WEBHOOK_REPLAY == "admin:webhook:replay"
+
+
+def test_auth_module_constants_match_values():
+    from shared_auth_lib.permissions import auth
+
+    expected = {
+        "SYSTEM_ADMIN": "system:admin",
+        "AUDIT_READ": "audit:read",
+        "USER_CREATE": "user:create",
+        "USER_MANAGE": "user:manage",
+        "USER_SUSPEND": "user:suspend",
+        "ROLE_CREATE": "role:create",
+        "ROLE_ASSIGN": "role:assign",
+        "CREDENTIAL_CREATE": "credential:create",
+        "CREDENTIAL_READ": "credential:read",
+        "CREDENTIAL_UPDATE": "credential:update",
+        "CREDENTIAL_DELETE": "credential:delete",
+        "CREDENTIAL_READ_SECRET": "credential:read_secret",
+        "CREDENTIAL_TYPE_CREATE": "credential_type:create",
+        "CREDENTIAL_TYPE_READ": "credential_type:read",
+        "CREDENTIAL_TYPE_UPDATE": "credential_type:update",
+        "CREDENTIAL_TYPE_DELETE": "credential_type:delete",
+        "EMAIL_SEND": "email:send",
+        "EMAIL_BULK_SEND": "email:bulk_send",
+        "EMAIL_READ_TEMPLATES": "email:read_templates",
+        "EMAIL_READ_STATS": "email:read_stats",
+        "EMAIL_READ_PROVIDERS": "email:read_providers",
+        "EMAIL_READ_HEALTH": "email:read_health",
+        "EMAIL_READ_LOGS": "email:read_logs",
+    }
+    for name, value in expected.items():
+        assert getattr(auth, name) == value
+    assert set(auth.__all__) == set(expected)
