@@ -38,7 +38,7 @@ from shared_auth_lib.services.hmac_verifier import (
     verify_signature,
 )
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 __all__ = [
     "ADMIN_ROLES",
