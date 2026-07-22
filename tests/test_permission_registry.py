@@ -27,15 +27,35 @@ def test_registry_resource_action_derivation():
 def test_registry_covers_key_scopes():
     names = permission_names()
     for required in [
-        "auth:role:create", "auth:role:assign", "auth:user:create", "auth:user:manage",  # bootstrap
-        "media:upload", "media:read", "media:update", "media:delete",
-        "media:billing:read", "media:usage:read", "media:quota:read", "media:quota:manage",
-        "lead:read", "lead:create", "lead:update", "lead:delete", "lead:assign", "lead:claim",
-        "admin:read", "admin:webhook:replay",
-        "dld:sync:manage", "dld:datasets:upload",
-        "dld:owners:read", "dld:owners:contact", "dld:owners:identity",
+        "auth:role:create",
+        "auth:role:assign",
+        "auth:user:create",
+        "auth:user:manage",  # bootstrap
+        "media:upload",
+        "media:read",
+        "media:update",
+        "media:delete",
+        "media:billing:read",
+        "media:usage:read",
+        "media:quota:read",
+        "media:quota:manage",
+        "lead:read",
+        "lead:create",
+        "lead:update",
+        "lead:delete",
+        "lead:assign",
+        "lead:claim",
+        "admin:read",
+        "admin:webhook:replay",
+        "dld:sync:manage",
+        "dld:datasets:upload",
+        "dld:owners:read",
+        "dld:owners:contact",
+        "dld:owners:identity",
         "property:scraping_cache:flush",
-        "finance:expenses:read", "hr:attendance_read", "recruitment:posting:create",
+        "finance:expenses:read",
+        "hr:attendance_read",
+        "recruitment:posting:create",
     ]:
         assert required in names, f"{required} missing from ALL_PERMISSIONS"
 
@@ -47,4 +67,8 @@ def test_every_exported_constant_is_in_registry():
     names = permission_names()
     for value in pkg.__all__:
         const = getattr(pkg, value)
-        assert const in names, f"{value} ({const}) exported but not in ALL_PERMISSIONS"
+        if not isinstance(const, str):
+            continue  # registry helpers (ALL_PERMISSIONS/PermissionDef/permission_names)
+        assert const in names, (
+            f"{value} ({const}) exported but not in ALL_PERMISSIONS"
+        )

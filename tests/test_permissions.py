@@ -15,8 +15,14 @@ from tr_shared.contracts.taxonomy import Feature
 # be renamed without a permission-row migration. Wildcards ("*") are grant-side
 # data, never declared as constants.
 PREFERRED_ACTIONS = {
-    "view", "create", "edit", "delete", "export",
-    "sync", "approve", "assign",
+    "view",
+    "create",
+    "edit",
+    "delete",
+    "export",
+    "sync",
+    "approve",
+    "assign",
 }
 _FEATURES = {f.value for f in Feature}
 _SCHEME = re.compile(r"^[a-z]+(:[a-z_]+){1,2}$")
@@ -166,3 +172,23 @@ def test_dld_and_scraping_modules():
         "DLD_OWNERS_IDENTITY",
     }
     assert set(scraping.__all__) == {"PROPERTY_SCRAPING_CACHE_FLUSH"}
+
+
+def test_package_root_exports_registry_and_new_constants():
+    import shared_auth_lib.permissions as pkg
+
+    assert hasattr(pkg, "ALL_PERMISSIONS")
+    assert hasattr(pkg, "PermissionDef")
+    assert hasattr(pkg, "permission_names")
+    assert pkg.MEDIA_BILLING_READ == "media:billing:read"
+    assert pkg.MEDIA_QUOTA_MANAGE == "media:quota:manage"
+    assert pkg.ADMIN_WEBHOOK_REPLAY == "admin:webhook:replay"
+    assert pkg.DLD_SYNC_MANAGE == "dld:sync:manage"
+    assert pkg.DLD_OWNERS_READ == "dld:owners:read"
+    assert pkg.PROPERTY_SCRAPING_CACHE_FLUSH == "property:scraping_cache:flush"
+
+
+def test_package_all_has_no_duplicates():
+    import shared_auth_lib.permissions as pkg
+
+    assert len(pkg.__all__) == len(set(pkg.__all__))
