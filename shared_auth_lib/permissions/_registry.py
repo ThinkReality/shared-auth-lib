@@ -100,6 +100,7 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(listing.LISTING_CREATE, "Create listings"),
     _d(listing.LISTING_UPDATE, "Update listings"),
     _d(listing.LISTING_DELETE, "Delete listings"),
+    _d(listing.LISTING_APPROVE, "Approve/confirm/unpublish listing publications"),
     _d(listing.LISTING_METRICS_READ, "Read listing metrics"),
     # hr
     _d(hr.HR_ATTENDANCE_READ, "Read attendance"),
