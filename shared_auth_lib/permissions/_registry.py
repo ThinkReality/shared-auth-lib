@@ -131,8 +131,11 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     # dld
     _d(dld.DLD_SYNC_MANAGE, "Manage DLD sync"),
     _d(dld.DLD_DATASETS_UPLOAD, "Upload DLD datasets"),
-    # scraping
-    _d(scraping.SCRAPING_CACHE_FLUSH, "Flush scraping cache"),
+    _d(dld.DLD_OWNERS_READ, "Read DLD owner records"),
+    _d(dld.DLD_OWNERS_CONTACT, "Read DLD owner contact details"),
+    _d(dld.DLD_OWNERS_IDENTITY, "Read DLD owner identity details"),
+    # property (realty scraping area)
+    _d(scraping.PROPERTY_SCRAPING_CACHE_FLUSH, "Flush the property scraper cache"),
 )
 
 

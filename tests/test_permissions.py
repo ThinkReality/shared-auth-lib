@@ -120,29 +120,29 @@ def test_auth_module_constants_match_values():
     from shared_auth_lib.permissions import auth
 
     expected = {
-        "SYSTEM_ADMIN": "system:admin",
-        "AUDIT_READ": "audit:read",
-        "USER_CREATE": "user:create",
-        "USER_MANAGE": "user:manage",
-        "USER_SUSPEND": "user:suspend",
-        "ROLE_CREATE": "role:create",
-        "ROLE_ASSIGN": "role:assign",
-        "CREDENTIAL_CREATE": "credential:create",
-        "CREDENTIAL_READ": "credential:read",
-        "CREDENTIAL_UPDATE": "credential:update",
-        "CREDENTIAL_DELETE": "credential:delete",
-        "CREDENTIAL_READ_SECRET": "credential:read_secret",
-        "CREDENTIAL_TYPE_CREATE": "credential_type:create",
-        "CREDENTIAL_TYPE_READ": "credential_type:read",
-        "CREDENTIAL_TYPE_UPDATE": "credential_type:update",
-        "CREDENTIAL_TYPE_DELETE": "credential_type:delete",
-        "EMAIL_SEND": "email:send",
-        "EMAIL_BULK_SEND": "email:bulk_send",
-        "EMAIL_READ_TEMPLATES": "email:read_templates",
-        "EMAIL_READ_STATS": "email:read_stats",
-        "EMAIL_READ_PROVIDERS": "email:read_providers",
-        "EMAIL_READ_HEALTH": "email:read_health",
-        "EMAIL_READ_LOGS": "email:read_logs",
+        "SYSTEM_ADMIN": "auth:system:admin",
+        "AUDIT_READ": "auth:audit:read",
+        "USER_CREATE": "auth:user:create",
+        "USER_MANAGE": "auth:user:manage",
+        "USER_SUSPEND": "auth:user:suspend",
+        "ROLE_CREATE": "auth:role:create",
+        "ROLE_ASSIGN": "auth:role:assign",
+        "CREDENTIAL_CREATE": "auth:credential:create",
+        "CREDENTIAL_READ": "auth:credential:read",
+        "CREDENTIAL_UPDATE": "auth:credential:update",
+        "CREDENTIAL_DELETE": "auth:credential:delete",
+        "CREDENTIAL_READ_SECRET": "auth:credential:read_secret",
+        "CREDENTIAL_TYPE_CREATE": "auth:credential_type:create",
+        "CREDENTIAL_TYPE_READ": "auth:credential_type:read",
+        "CREDENTIAL_TYPE_UPDATE": "auth:credential_type:update",
+        "CREDENTIAL_TYPE_DELETE": "auth:credential_type:delete",
+        "EMAIL_SEND": "auth:email:send",
+        "EMAIL_BULK_SEND": "auth:email:bulk_send",
+        "EMAIL_READ_TEMPLATES": "auth:email:read_templates",
+        "EMAIL_READ_STATS": "auth:email:read_stats",
+        "EMAIL_READ_PROVIDERS": "auth:email:read_providers",
+        "EMAIL_READ_HEALTH": "auth:email:read_health",
+        "EMAIL_READ_LOGS": "auth:email:read_logs",
     }
     for name, value in expected.items():
         assert getattr(auth, name) == value
@@ -154,6 +154,15 @@ def test_dld_and_scraping_modules():
 
     assert dld.DLD_SYNC_MANAGE == "dld:sync:manage"
     assert dld.DLD_DATASETS_UPLOAD == "dld:datasets:upload"
-    assert scraping.SCRAPING_CACHE_FLUSH == "scraping:cache:flush"
-    assert set(dld.__all__) == {"DLD_SYNC_MANAGE", "DLD_DATASETS_UPLOAD"}
-    assert set(scraping.__all__) == {"SCRAPING_CACHE_FLUSH"}
+    assert dld.DLD_OWNERS_READ == "dld:owners:read"
+    assert dld.DLD_OWNERS_CONTACT == "dld:owners:contact"
+    assert dld.DLD_OWNERS_IDENTITY == "dld:owners:identity"
+    assert scraping.PROPERTY_SCRAPING_CACHE_FLUSH == "property:scraping_cache:flush"
+    assert set(dld.__all__) == {
+        "DLD_SYNC_MANAGE",
+        "DLD_DATASETS_UPLOAD",
+        "DLD_OWNERS_READ",
+        "DLD_OWNERS_CONTACT",
+        "DLD_OWNERS_IDENTITY",
+    }
+    assert set(scraping.__all__) == {"PROPERTY_SCRAPING_CACHE_FLUSH"}
