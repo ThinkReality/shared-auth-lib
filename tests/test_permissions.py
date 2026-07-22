@@ -126,29 +126,29 @@ def test_auth_module_constants_match_values():
     from shared_auth_lib.permissions import auth
 
     expected = {
-        "SYSTEM_ADMIN": "auth:system:admin",
-        "AUDIT_READ": "auth:audit:read",
-        "USER_CREATE": "auth:user:create",
-        "USER_MANAGE": "auth:user:manage",
-        "USER_SUSPEND": "auth:user:suspend",
-        "ROLE_CREATE": "auth:role:create",
-        "ROLE_ASSIGN": "auth:role:assign",
-        "CREDENTIAL_CREATE": "auth:credential:create",
-        "CREDENTIAL_READ": "auth:credential:read",
-        "CREDENTIAL_UPDATE": "auth:credential:update",
-        "CREDENTIAL_DELETE": "auth:credential:delete",
-        "CREDENTIAL_READ_SECRET": "auth:credential:read_secret",
-        "CREDENTIAL_TYPE_CREATE": "auth:credential_type:create",
-        "CREDENTIAL_TYPE_READ": "auth:credential_type:read",
-        "CREDENTIAL_TYPE_UPDATE": "auth:credential_type:update",
-        "CREDENTIAL_TYPE_DELETE": "auth:credential_type:delete",
-        "EMAIL_SEND": "auth:email:send",
-        "EMAIL_BULK_SEND": "auth:email:bulk_send",
-        "EMAIL_READ_TEMPLATES": "auth:email:read_templates",
-        "EMAIL_READ_STATS": "auth:email:read_stats",
-        "EMAIL_READ_PROVIDERS": "auth:email:read_providers",
-        "EMAIL_READ_HEALTH": "auth:email:read_health",
-        "EMAIL_READ_LOGS": "auth:email:read_logs",
+        "AUTH_SYSTEM_ADMIN": "auth:system:admin",
+        "AUTH_AUDIT_READ": "auth:audit:read",
+        "AUTH_USER_CREATE": "auth:user:create",
+        "AUTH_USER_MANAGE": "auth:user:manage",
+        "AUTH_USER_SUSPEND": "auth:user:suspend",
+        "AUTH_ROLE_CREATE": "auth:role:create",
+        "AUTH_ROLE_ASSIGN": "auth:role:assign",
+        "AUTH_CREDENTIAL_CREATE": "auth:credential:create",
+        "AUTH_CREDENTIAL_READ": "auth:credential:read",
+        "AUTH_CREDENTIAL_UPDATE": "auth:credential:update",
+        "AUTH_CREDENTIAL_DELETE": "auth:credential:delete",
+        "AUTH_CREDENTIAL_READ_SECRET": "auth:credential:read_secret",
+        "AUTH_CREDENTIAL_TYPE_CREATE": "auth:credential_type:create",
+        "AUTH_CREDENTIAL_TYPE_READ": "auth:credential_type:read",
+        "AUTH_CREDENTIAL_TYPE_UPDATE": "auth:credential_type:update",
+        "AUTH_CREDENTIAL_TYPE_DELETE": "auth:credential_type:delete",
+        "AUTH_EMAIL_SEND": "auth:email:send",
+        "AUTH_EMAIL_BULK_SEND": "auth:email:bulk_send",
+        "AUTH_EMAIL_READ_TEMPLATES": "auth:email:read_templates",
+        "AUTH_EMAIL_READ_STATS": "auth:email:read_stats",
+        "AUTH_EMAIL_READ_PROVIDERS": "auth:email:read_providers",
+        "AUTH_EMAIL_READ_HEALTH": "auth:email:read_health",
+        "AUTH_EMAIL_READ_LOGS": "auth:email:read_logs",
     }
     for name, value in expected.items():
         assert getattr(auth, name) == value
@@ -192,3 +192,18 @@ def test_package_all_has_no_duplicates():
     import shared_auth_lib.permissions as pkg
 
     assert len(pkg.__all__) == len(set(pkg.__all__))
+
+
+def test_auth_constants_flat_exported_from_package_root():
+    import shared_auth_lib.permissions as pkg
+
+    assert pkg.AUTH_SYSTEM_ADMIN == "auth:system:admin"
+    assert pkg.AUTH_USER_CREATE == "auth:user:create"
+    assert pkg.AUTH_ROLE_ASSIGN == "auth:role:assign"
+    assert pkg.AUTH_CREDENTIAL_READ_SECRET == "auth:credential:read_secret"
+    assert pkg.AUTH_EMAIL_READ_LOGS == "auth:email:read_logs"
+    # every auth __all__ name is reachable flat
+    from shared_auth_lib.permissions import auth
+
+    for name in auth.__all__:
+        assert getattr(pkg, name) == getattr(auth, name)
