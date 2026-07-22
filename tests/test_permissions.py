@@ -192,3 +192,18 @@ def test_package_all_has_no_duplicates():
     import shared_auth_lib.permissions as pkg
 
     assert len(pkg.__all__) == len(set(pkg.__all__))
+
+
+def test_auth_constants_flat_exported_from_package_root():
+    import shared_auth_lib.permissions as pkg
+
+    assert pkg.AUTH_SYSTEM_ADMIN == "auth:system:admin"
+    assert pkg.AUTH_USER_CREATE == "auth:user:create"
+    assert pkg.AUTH_ROLE_ASSIGN == "auth:role:assign"
+    assert pkg.AUTH_CREDENTIAL_READ_SECRET == "auth:credential:read_secret"
+    assert pkg.AUTH_EMAIL_READ_LOGS == "auth:email:read_logs"
+    # every auth __all__ name is reachable flat
+    from shared_auth_lib.permissions import auth
+
+    for name in auth.__all__:
+        assert getattr(pkg, name) == getattr(auth, name)
