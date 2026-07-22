@@ -97,3 +97,18 @@ def test_recruitment_granular_constants_importable_from_permissions_package():
     assert HR_RECRUITMENT_POSTING_CREATE == "recruitment:posting:create"
     assert HR_RECRUITMENT_POSTING_PUBLISH == "recruitment:posting:publish"
     assert HR_RECRUITMENT_POSTING_UPDATE == "recruitment:posting:update"
+
+
+def test_media_billing_usage_quota_constants_present():
+    from shared_auth_lib.permissions import media
+
+    assert media.MEDIA_BILLING_READ == "media:billing:read"
+    assert media.MEDIA_USAGE_READ == "media:usage:read"
+    assert media.MEDIA_QUOTA_READ == "media:quota:read"
+    assert media.MEDIA_QUOTA_MANAGE == "media:quota:manage"
+
+
+def test_admin_webhook_replay_constant_present():
+    from shared_auth_lib.permissions import admin
+
+    assert admin.ADMIN_WEBHOOK_REPLAY == "admin:webhook:replay"
