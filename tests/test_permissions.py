@@ -24,6 +24,8 @@ _SCHEME = re.compile(r"^[a-z]+(:[a-z_]+){1,2}$")
 
 def _iter_permission_modules():
     for info in pkgutil.iter_modules(permissions_pkg.__path__):
+        if info.name.startswith("_"):
+            continue
         yield importlib.import_module(f"shared_auth_lib.permissions.{info.name}")
 
 
