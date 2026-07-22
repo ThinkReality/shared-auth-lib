@@ -39,12 +39,16 @@ def test_registry_covers_key_scopes():
         "media:usage:read",
         "media:quota:read",
         "media:quota:manage",
+        "cms:landing_page:publish",
         "lead:read",
         "lead:create",
         "lead:update",
         "lead:delete",
         "lead:assign",
         "lead:claim",
+        "lead:note_delete",
+        "lead:document_delete",
+        "lead:mine_pool_admin_read",
         "admin:read",
         "admin:webhook:replay",
         "dld:sync:manage",
@@ -56,6 +60,7 @@ def test_registry_covers_key_scopes():
         "finance:expenses:read",
         "hr:attendance_read",
         "recruitment:posting:create",
+        "listing:metrics:read",
     ]:
         assert required in names, f"{required} missing from ALL_PERMISSIONS"
 

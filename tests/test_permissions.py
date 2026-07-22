@@ -221,3 +221,13 @@ def test_auth_constants_flat_exported_from_package_root():
 
     for name in auth.__all__:
         assert getattr(pkg, name) == getattr(auth, name)
+
+
+def test_p4_new_constants_flat_exported():
+    import shared_auth_lib.permissions as pkg
+
+    assert pkg.CMS_LANDING_PAGE_PUBLISH == "cms:landing_page:publish"
+    assert pkg.LEAD_NOTE_DELETE == "lead:note_delete"
+    assert pkg.LEAD_DOCUMENT_DELETE == "lead:document_delete"
+    assert pkg.LEAD_MINE_POOL_ADMIN_VIEW == "lead:mine_pool_admin_read"
+    assert pkg.LISTING_METRICS_READ == "listing:metrics:read"

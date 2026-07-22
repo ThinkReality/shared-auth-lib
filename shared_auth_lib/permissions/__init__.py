@@ -34,6 +34,9 @@ from shared_auth_lib.permissions.auth import (
     AUTH_USER_MANAGE,
     AUTH_USER_SUSPEND,
 )
+from shared_auth_lib.permissions.cms import (
+    CMS_LANDING_PAGE_PUBLISH,
+)
 from shared_auth_lib.permissions.dld import (
     DLD_DATASETS_UPLOAD,
     DLD_OWNERS_CONTACT,
@@ -74,12 +77,16 @@ from shared_auth_lib.permissions.lead import (
     LEAD_CLAIM,
     LEAD_CREATE,
     LEAD_DELETE,
+    LEAD_DOCUMENT_DELETE,
+    LEAD_MINE_POOL_ADMIN_VIEW,
+    LEAD_NOTE_DELETE,
     LEAD_UPDATE,
     LEAD_VIEW,
 )
 from shared_auth_lib.permissions.listing import (
     LISTING_CREATE,
     LISTING_DELETE,
+    LISTING_METRICS_READ,
     LISTING_UPDATE,
     LISTING_VIEW,
 )
@@ -142,6 +149,8 @@ __all__ = [
     "AUTH_USER_CREATE",
     "AUTH_USER_MANAGE",
     "AUTH_USER_SUSPEND",
+    # cms
+    "CMS_LANDING_PAGE_PUBLISH",
     # dld
     "DLD_DATASETS_UPLOAD",
     "DLD_OWNERS_CONTACT",
@@ -181,11 +190,15 @@ __all__ = [
     "LEAD_CLAIM",
     "LEAD_CREATE",
     "LEAD_DELETE",
+    "LEAD_DOCUMENT_DELETE",
+    "LEAD_MINE_POOL_ADMIN_VIEW",
+    "LEAD_NOTE_DELETE",
     "LEAD_UPDATE",
     "LEAD_VIEW",
     # listing
     "LISTING_CREATE",
     "LISTING_DELETE",
+    "LISTING_METRICS_READ",
     "LISTING_UPDATE",
     "LISTING_VIEW",
     # media
