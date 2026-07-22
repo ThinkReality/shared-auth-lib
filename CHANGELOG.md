@@ -5,6 +5,23 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-07-23
+
+### Changed (BREAKING)
+- `PlatformRole` (9 UPPER members) → `SystemRole` (2 lowercase: `super_admin`,
+  `admin`). All non-system roles are per-tenant dynamic data. Removed
+  `ADMIN_ROLES`, `AGENT_ROLES`, `ROLE_RANK`; added `SYSTEM_ROLES` frozenset.
+- `require_role`/`require_any_role` validate against `SystemRole` (role-name
+  gates may reference only the two system roles; feature access is permission-based).
+- `DEV_ROLES` default lowercased to `["admin"]`.
+- `has_role` (inherited via role_hierarchy) vs `has_any_role` (exact, no
+  widening) documented; behavior unchanged.
+
+### Migration
+- Consumers replace `PlatformRole`→`SystemRole`, `ADMIN_ROLES`→`SYSTEM_ROLES`
+  (MANAGER dropped from the admin tier), and re-case any UPPER role literals /
+  seeded `Role.name` to lowercase. See tr-api-gateway (P6b) + tr-crm-core (P6c).
+
 ## [0.9.2] - 2026-07-22
 
 ### Added
