@@ -5,6 +5,15 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2026-07-22
+
+### Added
+- `permissions/cms.py` — `CMS_LANDING_PAGE_PUBLISH` (`cms:landing_page:publish`).
+- `lead.LEAD_NOTE_DELETE`, `lead.LEAD_DOCUMENT_DELETE`,
+  `lead.LEAD_MINE_POOL_ADMIN_VIEW`; `listing.LISTING_METRICS_READ`.
+- All registered in `ALL_PERMISSIONS` + flat-exported. These back the P4
+  role-gate→permission migrations in tr-content-platform + tr-lead-management.
+
 ## [0.9.1] - 2026-07-22
 
 ### Changed

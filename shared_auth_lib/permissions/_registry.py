@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from shared_auth_lib.permissions import (
     admin,
     auth,
+    cms,
     dld,
     finance,
     hr,
@@ -70,6 +71,8 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     # admin
     _d(admin.ADMIN_READ, "Read admin resources"),
     _d(admin.ADMIN_WEBHOOK_REPLAY, "Replay admin webhooks"),
+    # cms
+    _d(cms.CMS_LANDING_PAGE_PUBLISH, "Publish/approve/reject landing pages"),
     # media
     _d(media.MEDIA_VIEW, "Read media"),
     _d(media.MEDIA_UPLOAD, "Upload media"),
@@ -86,11 +89,18 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(lead.LEAD_DELETE, "Delete leads"),
     _d(lead.LEAD_ASSIGN, "Assign leads"),
     _d(lead.LEAD_CLAIM, "Claim leads"),
+    _d(lead.LEAD_NOTE_DELETE, "Delete lead notes"),
+    _d(lead.LEAD_DOCUMENT_DELETE, "Delete lead documents"),
+    _d(
+        lead.LEAD_MINE_POOL_ADMIN_VIEW,
+        "Admin view of the lead mine-pool",
+    ),
     # listing
     _d(listing.LISTING_VIEW, "Read listings"),
     _d(listing.LISTING_CREATE, "Create listings"),
     _d(listing.LISTING_UPDATE, "Update listings"),
     _d(listing.LISTING_DELETE, "Delete listings"),
+    _d(listing.LISTING_METRICS_READ, "Read listing metrics"),
     # hr
     _d(hr.HR_ATTENDANCE_READ, "Read attendance"),
     _d(hr.HR_ATTENDANCE_EXPORT, "Export attendance"),
