@@ -145,3 +145,13 @@ def test_auth_module_constants_match_values():
     for name, value in expected.items():
         assert getattr(auth, name) == value
     assert set(auth.__all__) == set(expected)
+
+
+def test_dld_and_scraping_modules():
+    from shared_auth_lib.permissions import dld, scraping
+
+    assert dld.DLD_SYNC_MANAGE == "dld:sync:manage"
+    assert dld.DLD_DATASETS_UPLOAD == "dld:datasets:upload"
+    assert scraping.SCRAPING_CACHE_FLUSH == "scraping:cache:flush"
+    assert set(dld.__all__) == {"DLD_SYNC_MANAGE", "DLD_DATASETS_UPLOAD"}
+    assert set(scraping.__all__) == {"SCRAPING_CACHE_FLUSH"}
