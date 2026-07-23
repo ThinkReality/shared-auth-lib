@@ -36,6 +36,7 @@ from shared_auth_lib.permissions.auth import (
 )
 from shared_auth_lib.permissions.cms import (
     CMS_LANDING_PAGE_PUBLISH,
+    CMS_BLOG_PUBLISH,
 )
 from shared_auth_lib.permissions.dld import (
     DLD_DATASETS_UPLOAD,
@@ -152,6 +153,7 @@ __all__ = [
     "AUTH_USER_SUSPEND",
     # cms
     "CMS_LANDING_PAGE_PUBLISH",
+    "CMS_BLOG_PUBLISH",
     # dld
     "DLD_DATASETS_UPLOAD",
     "DLD_OWNERS_CONTACT",
