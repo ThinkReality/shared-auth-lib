@@ -73,6 +73,7 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(admin.ADMIN_WEBHOOK_REPLAY, "Replay admin webhooks"),
     # cms
     _d(cms.CMS_LANDING_PAGE_PUBLISH, "Publish/approve/reject landing pages"),
+    _d(cms.CMS_BLOG_PUBLISH, "Publish/unpublish/delete blog posts"),
     # media
     _d(media.MEDIA_VIEW, "Read media"),
     _d(media.MEDIA_UPLOAD, "Upload media"),

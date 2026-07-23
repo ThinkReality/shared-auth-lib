@@ -198,12 +198,14 @@ def test_p4_new_constants_present():
     from shared_auth_lib.permissions import cms, lead, listing
 
     assert cms.CMS_LANDING_PAGE_PUBLISH == "cms:landing_page:publish"
+    assert cms.CMS_BLOG_PUBLISH == "cms:blog:publish"
     assert lead.LEAD_NOTE_DELETE == "lead:note_delete"
     assert lead.LEAD_DOCUMENT_DELETE == "lead:document_delete"
     assert lead.LEAD_MINE_POOL_ADMIN_VIEW == "lead:mine_pool_admin_read"
     assert listing.LISTING_METRICS_READ == "listing:metrics:read"
     assert listing.LISTING_APPROVE == "listing:approve"
     assert "CMS_LANDING_PAGE_PUBLISH" in cms.__all__
+    assert "CMS_BLOG_PUBLISH" in cms.__all__
     for name in ("LEAD_NOTE_DELETE", "LEAD_DOCUMENT_DELETE", "LEAD_MINE_POOL_ADMIN_VIEW"):
         assert name in lead.__all__
     assert "LISTING_METRICS_READ" in listing.__all__
@@ -229,6 +231,7 @@ def test_p4_new_constants_flat_exported():
     import shared_auth_lib.permissions as pkg
 
     assert pkg.CMS_LANDING_PAGE_PUBLISH == "cms:landing_page:publish"
+    assert pkg.CMS_BLOG_PUBLISH == "cms:blog:publish"
     assert pkg.LEAD_NOTE_DELETE == "lead:note_delete"
     assert pkg.LEAD_DOCUMENT_DELETE == "lead:document_delete"
     assert pkg.LEAD_MINE_POOL_ADMIN_VIEW == "lead:mine_pool_admin_read"
