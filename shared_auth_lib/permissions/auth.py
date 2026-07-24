@@ -27,14 +27,6 @@ AUTH_CREDENTIAL_TYPE_READ = "auth:credential_type:read"
 AUTH_CREDENTIAL_TYPE_UPDATE = "auth:credential_type:update"
 AUTH_CREDENTIAL_TYPE_DELETE = "auth:credential_type:delete"
 
-AUTH_EMAIL_SEND = "auth:email:send"
-AUTH_EMAIL_BULK_SEND = "auth:email:bulk_send"
-AUTH_EMAIL_READ_TEMPLATES = "auth:email:read_templates"
-AUTH_EMAIL_READ_STATS = "auth:email:read_stats"
-AUTH_EMAIL_READ_PROVIDERS = "auth:email:read_providers"
-AUTH_EMAIL_READ_HEALTH = "auth:email:read_health"
-AUTH_EMAIL_READ_LOGS = "auth:email:read_logs"
-
 __all__ = [
     "AUTH_SYSTEM_ADMIN",
     "AUTH_AUDIT_READ",
@@ -52,11 +44,4 @@ __all__ = [
     "AUTH_CREDENTIAL_TYPE_READ",
     "AUTH_CREDENTIAL_TYPE_UPDATE",
     "AUTH_CREDENTIAL_TYPE_DELETE",
-    "AUTH_EMAIL_SEND",
-    "AUTH_EMAIL_BULK_SEND",
-    "AUTH_EMAIL_READ_TEMPLATES",
-    "AUTH_EMAIL_READ_STATS",
-    "AUTH_EMAIL_READ_PROVIDERS",
-    "AUTH_EMAIL_READ_HEALTH",
-    "AUTH_EMAIL_READ_LOGS",
 ]
