@@ -61,13 +61,6 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(auth.AUTH_CREDENTIAL_TYPE_READ, "Read credential types"),
     _d(auth.AUTH_CREDENTIAL_TYPE_UPDATE, "Update credential types"),
     _d(auth.AUTH_CREDENTIAL_TYPE_DELETE, "Delete credential types"),
-    _d(auth.AUTH_EMAIL_SEND, "Send email"),
-    _d(auth.AUTH_EMAIL_BULK_SEND, "Send bulk email"),
-    _d(auth.AUTH_EMAIL_READ_TEMPLATES, "Read email templates"),
-    _d(auth.AUTH_EMAIL_READ_STATS, "Read email stats"),
-    _d(auth.AUTH_EMAIL_READ_PROVIDERS, "Read email providers"),
-    _d(auth.AUTH_EMAIL_READ_HEALTH, "Read email health"),
-    _d(auth.AUTH_EMAIL_READ_LOGS, "Read email logs"),
     # admin
     _d(admin.ADMIN_READ, "Read admin resources"),
     _d(admin.ADMIN_WEBHOOK_REPLAY, "Replay admin webhooks"),
