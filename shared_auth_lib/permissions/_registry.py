@@ -64,6 +64,11 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     # admin
     _d(admin.ADMIN_READ, "Read admin resources"),
     _d(admin.ADMIN_WEBHOOK_REPLAY, "Replay admin webhooks"),
+    _d(admin.ADMIN_SITE_READ, "Read tenant website registry"),
+    _d(admin.ADMIN_SITE_CREATE, "Register a tenant website and issue its API key"),
+    _d(admin.ADMIN_SITE_UPDATE, "Update a tenant website"),
+    _d(admin.ADMIN_SITE_DELETE, "Remove a tenant website"),
+    _d(admin.ADMIN_SITE_KEY_ROTATE, "Rotate a tenant website's API key"),
     # cms
     _d(cms.CMS_LANDING_PAGE_PUBLISH, "Publish/approve/reject landing pages"),
     _d(cms.CMS_BLOG_PUBLISH, "Publish/unpublish/delete blog posts"),

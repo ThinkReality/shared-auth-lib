@@ -65,6 +65,17 @@ class IdentityExtractionMiddleware(BaseHTTPMiddleware):
                     f"{tenant_id_str}"
                 ) from exc
 
+        site_id_str = headers.get(HttpHeader.SITE_ID.value)
+        site_id: UUID | None = None
+        if site_id_str:
+            try:
+                site_id = UUID(site_id_str)
+            except ValueError as exc:
+                raise InvalidIdentityHeaderError(
+                    f"{HttpHeader.SITE_ID.value} must be a valid UUID, got: "
+                    f"{site_id_str}"
+                ) from exc
+
         permissions_raw = headers.get(HttpHeader.USER_PERMISSIONS.value) or ""
         permissions = [p for p in permissions_raw.split(",") if p]
 
@@ -72,6 +83,7 @@ class IdentityExtractionMiddleware(BaseHTTPMiddleware):
             user_id=user_id,
             user_role=headers.get(HttpHeader.USER_ROLE.value),
             tenant_id=tenant_id,
+            site_id=site_id,
             # Email and permissions are HMAC-signed (SIGNED_HEADERS) — safe to trust.
             user_email=headers.get(HttpHeader.USER_EMAIL.value),
             permissions=permissions,

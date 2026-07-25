@@ -7,6 +7,11 @@ from shared_auth_lib.permissions._registry import (
 )
 from shared_auth_lib.permissions.admin import (
     ADMIN_READ,
+    ADMIN_SITE_CREATE,
+    ADMIN_SITE_DELETE,
+    ADMIN_SITE_KEY_ROTATE,
+    ADMIN_SITE_READ,
+    ADMIN_SITE_UPDATE,
     ADMIN_WEBHOOK_REPLAY,
 )
 from shared_auth_lib.permissions.auth import (
@@ -119,6 +124,11 @@ __all__ = [
     "permission_names",
     # admin
     "ADMIN_READ",
+    "ADMIN_SITE_CREATE",
+    "ADMIN_SITE_DELETE",
+    "ADMIN_SITE_KEY_ROTATE",
+    "ADMIN_SITE_READ",
+    "ADMIN_SITE_UPDATE",
     "ADMIN_WEBHOOK_REPLAY",
     # auth
     "AUTH_AUDIT_READ",

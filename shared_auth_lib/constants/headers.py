@@ -16,7 +16,14 @@ from tr_shared.contracts.headers import HttpHeader
 
 class SignedHeader(StrEnum):
     """Values derive from HttpHeader (SSOT). ORDER is the signing contract — do not
-    reorder. New members are APPENDED at the end so existing signatures stay valid."""
+    reorder.
+
+    Adding a member is NOT backward compatible. ``build_canonical_string`` emits one
+    component per member and substitutes "" when the header is absent, so a signer
+    with N members and a verifier with N-1 produce different signatures and every
+    route 403s. Any change here requires gateway and all downstream services to be
+    re-pinned and deployed together — never rolled.
+    """
 
     USER_ID = HttpHeader.USER_ID.value
     USER_ROLE = HttpHeader.USER_ROLE.value
@@ -24,6 +31,7 @@ class SignedHeader(StrEnum):
     CORRELATION_ID = HttpHeader.CORRELATION_ID.value
     USER_EMAIL = HttpHeader.USER_EMAIL.value
     USER_PERMISSIONS = HttpHeader.USER_PERMISSIONS.value
+    SITE_ID = HttpHeader.SITE_ID.value
 
 
 SIGNED_HEADERS: Final[list[str]] = [h.value for h in SignedHeader]

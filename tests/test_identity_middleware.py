@@ -42,6 +42,11 @@ def _create_app() -> FastAPI:
             "permissions": identity.permissions,
             "auth_provider": identity.auth_provider,
             "correlation_id": identity.correlation_id,
+            "site_id": (
+                str(identity.site_id)
+                if identity.site_id
+                else None
+            ),
         }
 
     return app
@@ -125,6 +130,43 @@ class TestIdentityExtractionMiddleware:
         )
         assert resp.status_code == 200
         assert resp.json()["auth_provider"] == "supabase"
+
+
+class TestSiteIdExtraction:
+    """X-Site-Id is HMAC-signed, so by the time this middleware runs it is
+    trusted — but it must still be a UUID, and absent must mean None, not ''."""
+
+    def test_site_id_parsed_when_present(self):
+        client = TestClient(_create_app())
+        site_id = str(uuid4())
+        resp = client.get(
+            "/check-identity",
+            headers={"X-Site-Id": site_id},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["site_id"] == site_id
+
+    def test_site_id_none_when_absent(self):
+        client = TestClient(_create_app())
+        resp = client.get("/check-identity")
+        assert resp.status_code == 200
+        assert resp.json()["site_id"] is None
+
+    def test_malformed_site_id_falls_back_to_empty_identity(self):
+        """A bad X-Site-Id must not leak a partial identity — the middleware
+        discards the whole thing, same as it does for a bad tenant."""
+        client = TestClient(_create_app())
+        resp = client.get(
+            "/check-identity",
+            headers={
+                "X-Site-Id": "not-a-uuid",
+                "X-Tenant-ID": str(uuid4()),
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["site_id"] is None
+        assert data["tenant_id"] is None
 
 
 class _MockCorrelationIDMiddleware(BaseHTTPMiddleware):
