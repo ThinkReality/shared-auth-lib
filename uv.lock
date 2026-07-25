@@ -700,7 +700,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "starlette", specifier = ">=0.27.0" },
-    { name = "tr-shared-lib", extras = ["http", "logging"], git = "https://github.com/ThinkReality/tr-shared-lib.git?branch=main" },
+    { name = "tr-shared-lib", extras = ["http", "logging"], git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.41.1" },
 ]
 
 [package.metadata.requires-dev]
@@ -747,8 +747,8 @@ wheels = [
 
 [[package]]
 name = "tr-shared-lib"
-version = "0.34.0"
-source = { git = "https://github.com/ThinkReality/tr-shared-lib.git?branch=main#a2af4ad91a5e225215c442546db7f18b9e569c3f" }
+version = "0.41.1"
+source = { git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.41.1#0997683b77bac3970a944abe8942724a006a35f8" }
 dependencies = [
     { name = "pydantic-settings" },
 ]
