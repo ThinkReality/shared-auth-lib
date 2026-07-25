@@ -63,6 +63,7 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(auth.AUTH_CREDENTIAL_TYPE_DELETE, "Delete credential types"),
     # admin
     _d(admin.ADMIN_READ, "Read admin resources"),
+    _d(admin.ADMIN_WRITE, "Create, update, and delete admin resources"),
     _d(admin.ADMIN_WEBHOOK_REPLAY, "Replay admin webhooks"),
     _d(admin.ADMIN_SITE_READ, "Read tenant website registry"),
     _d(admin.ADMIN_SITE_CREATE, "Register a tenant website and issue its API key"),

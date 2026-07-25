@@ -50,6 +50,7 @@ def test_registry_covers_key_scopes():
         "lead:document_delete",
         "lead:mine_pool_admin_read",
         "admin:read",
+        "admin:write",
         "admin:webhook:replay",
         "dld:sync:manage",
         "dld:datasets:upload",

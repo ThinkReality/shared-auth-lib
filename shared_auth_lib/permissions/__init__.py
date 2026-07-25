@@ -13,6 +13,7 @@ from shared_auth_lib.permissions.admin import (
     ADMIN_SITE_READ,
     ADMIN_SITE_UPDATE,
     ADMIN_WEBHOOK_REPLAY,
+    ADMIN_WRITE,
 )
 from shared_auth_lib.permissions.auth import (
     AUTH_AUDIT_READ,
@@ -130,6 +131,7 @@ __all__ = [
     "ADMIN_SITE_READ",
     "ADMIN_SITE_UPDATE",
     "ADMIN_WEBHOOK_REPLAY",
+    "ADMIN_WRITE",
     # auth
     "AUTH_AUDIT_READ",
     "AUTH_CREDENTIAL_CREATE",
