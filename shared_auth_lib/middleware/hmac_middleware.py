@@ -24,6 +24,33 @@ DEFAULT_SKIP_PATHS: list[str] = [
 ]
 
 
+def path_is_skipped(path: str, skip_paths: list[str]) -> bool:
+    """Whether *path* is exempt from HMAC verification under *skip_paths*.
+
+    The skip_paths mini-language:
+
+    - Trailing ``/`` — prefix match. ``/internal/`` covers ``/internal/x`` and
+      bare ``/internal``, but not ``/internalize``.
+    - No trailing ``/`` — exact match. ``/api/v1/health`` does not cover
+      ``/api/v1/health/ready``.
+    - ``"/"`` — the root route only. It ends in a slash but prefixes every
+      path, so prefix-matching it would exempt the entire service.
+
+    Single source of truth: the middleware and every OpenAPI schema builder
+    that marks routes public must call this rather than reimplement it.
+    """
+    for skip in skip_paths:
+        if skip == "/":
+            if path == "/":
+                return True
+        elif skip.endswith("/"):
+            if path.startswith(skip) or path == skip.rstrip("/"):
+                return True
+        elif path == skip:
+            return True
+    return False
+
+
 class GatewayHMACMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
@@ -216,13 +243,4 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             return not self._replay_fail_open
 
     def _should_skip(self, path: str) -> bool:
-        # Trailing '/' = prefix match (/internal/ → /internal/x, not /internalize).
-        # No trailing '/' = exact match only.
-        for skip in self.skip_paths:
-            if skip.endswith("/"):
-                if path.startswith(skip) or path == skip.rstrip("/"):
-                    return True
-            else:
-                if path == skip:
-                    return True
-        return False
+        return path_is_skipped(path, self.skip_paths)

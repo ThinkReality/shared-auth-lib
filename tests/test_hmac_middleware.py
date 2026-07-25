@@ -39,6 +39,10 @@ def _create_app(
     async def internal_status():
         return {"status": "internal"}
 
+    @app.get("/")
+    async def root():
+        return {"status": "root"}
+
     return app
 
 
@@ -134,6 +138,49 @@ class TestGatewayHMACMiddleware:
         client = TestClient(app)
         resp = client.get("/protected")
         assert resp.status_code == 200
+
+    def test_root_skip_path_matches_root_only(self):
+        """`"/"` skips the root route and nothing else.
+
+        A trailing slash means prefix-match, but `"/"` prefixes every path, so
+        treating it as one silently disables HMAC verification service-wide.
+        """
+        client = TestClient(_create_app(skip_paths=["/"]))
+
+        assert client.get("/").status_code == 200
+        assert client.get("/protected").status_code == 403
+        assert client.get("/internal/status").status_code == 403
+        assert client.get("/health").status_code == 403
+
+
+class TestSkipPathMatching:
+    """Exact semantics of the skip_paths mini-language.
+
+    Trailing slash = prefix match; no trailing slash = exact match; `"/"` is
+    root-only. Table-driven so a regression names the exact pair that broke.
+    """
+
+    CASES = [
+        # (skip_paths, path, should_skip)
+        (["/"], "/", True),
+        (["/"], "/api/v1/leads", False),
+        (["/"], "/health", False),
+        (["/api/v1/internal/"], "/api/v1/internal/", True),
+        (["/api/v1/internal/"], "/api/v1/internal", True),
+        (["/api/v1/internal/"], "/api/v1/internal/auth-context/1", True),
+        (["/api/v1/internal/"], "/api/v1/internalize", False),
+        (["/api/v1/health"], "/api/v1/health", True),
+        (["/api/v1/health"], "/api/v1/health/ready", False),
+        (["/api/v1/health"], "/api/v1/healthz", False),
+    ]
+
+    def test_skip_path_matching(self):
+        for skip_paths, path, expected in self.CASES:
+            mw = GatewayHMACMiddleware(app=None, secret=SECRET, skip_paths=skip_paths)
+            assert mw._should_skip(path) is expected, (
+                f"skip_paths={skip_paths!r} path={path!r} "
+                f"expected skip={expected}, got {not expected}"
+            )
 
 
 class _FakeAsyncRedis:
