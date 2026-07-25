@@ -1,0 +1,39 @@
+# Runs on `git push` only. Setup: uv run pre-commit install --hook-type pre-push
+# Hooks call `uv run` to match uv.lock-pinned versions, same as CI (.github/workflows/ci.yml).
+# Mirrors the CI `lint` job exactly so a push cannot go red on lint the way a bare commit can.
+# The uv-lock-check hook also guards self-version bumps (bump without `uv lock` breaks CI's
+# `uv sync --locked`).
+default_install_hook_types: [pre-push]
+default_stages: [pre-push]
+
+repos:
+  - repo: local
+    hooks:
+      - id: uv-lock-check
+        name: uv lock --locked (lockfile in sync with pyproject)
+        entry: uv lock --locked
+        language: system
+        files: ^(pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+
+      - id: ruff-check
+        name: ruff check shared_auth_lib/
+        entry: uv run ruff check shared_auth_lib/
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: ruff-format
+        name: ruff format --check shared_auth_lib/
+        entry: uv run ruff format --check shared_auth_lib/
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      # Zero-tolerance mypy gate: shared_auth_lib/ is fully typed, 0 errors (matches CI).
+      - id: mypy
+        name: mypy shared_auth_lib/
+        entry: uv run mypy shared_auth_lib/
+        language: system
+        types: [python]
+        pass_filenames: false
