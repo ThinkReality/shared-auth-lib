@@ -21,7 +21,6 @@ class TestAuthContext:
             permissions=["user:read", "listing:create"],
             is_active=True,
             is_suspended=False,
-            role_hierarchy=["admin"],
         )
         defaults.update(overrides)
         return AuthContext(**defaults)
@@ -34,22 +33,21 @@ class TestAuthContext:
         ctx = self._make_context()
         assert ctx.has_permission("user:delete") is False
 
-    def test_has_role_direct(self):
+    def test_has_role_is_gone(self):
+        """v0.16.0 removed `has_role`, which widened role checks via the
+        `role_hierarchy` field. Its every caller was a cross-tenant scope gate —
+        precisely where inheritance must not apply. `has_any_role` is the only
+        role check now; this asserts the widening path cannot be reintroduced by
+        accident."""
         ctx = self._make_context()
-        assert ctx.has_role("admin") is True
+        assert not hasattr(ctx, "has_role")
+        assert "role_hierarchy" not in AuthContext.model_fields
 
-    def test_has_role_via_hierarchy(self):
-        ctx = self._make_context(
-            roles=["sales_agent"], role_hierarchy=["sales_manager"]
-        )
-        assert ctx.has_role("sales_manager") is True
-        assert ctx.has_any_role(["sales_manager"]) is False
-
-    def test_has_role_missing(self):
-        ctx = self._make_context(
-            roles=["sales_agent"], role_hierarchy=["sales_agent"]
-        )
-        assert ctx.has_role("super_admin") is False
+    def test_role_hierarchy_on_the_wire_is_ignored_not_honoured(self):
+        """An older producer still sending the field must not resurrect widening."""
+        ctx = self._make_context(roles=["sales_agent"], role_hierarchy=["super_admin"])
+        assert ctx.has_any_role(["super_admin"]) is False
+        assert ctx.roles == ["sales_agent"]
 
     def test_has_any_role_true(self):
         ctx = self._make_context()

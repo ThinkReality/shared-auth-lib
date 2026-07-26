@@ -4,7 +4,7 @@ Only two platform-fixed roles exist: ``super_admin`` and ``admin`` (lowercase).
 Every other role is a per-tenant DYNAMIC role stored as data (``auth_roles``),
 never a member here. Values are lowercase and match the strings carried in
 ``AuthContext.roles`` on the wire. A role NAME is checked in exactly one place —
-tenant scope (``has_role(SystemRole.SUPER_ADMIN)``); all feature access is
+tenant scope (``has_any_role([SystemRole.SUPER_ADMIN])``); all feature access is
 permission-based.
 """
 

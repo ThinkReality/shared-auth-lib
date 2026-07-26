@@ -235,28 +235,10 @@ def _validate_role(role: SystemRole | str) -> str:
         ) from exc
 
 
-def require_role(
-    role: SystemRole | str,
-) -> Callable[..., Awaitable[AuthContext]]:
-    """Dependency factory: require a specific role (or higher via hierarchy).
-
-    The role is validated against ``SystemRole`` when the dependency is
-    constructed, so a bare or unknown SystemRole string fails at
-    import/router registration rather than silently passing.
-    """
-    role = _validate_role(role)
-
-    async def _checker(
-        auth_context: AuthContext = Depends(require_auth),
-    ) -> AuthContext:
-        if not auth_context.has_role(role):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Role required: {role}",
-            )
-        return auth_context
-
-    return _checker
+# `require_role(role)` was removed in v0.16.0. It resolved through
+# AuthContext.has_role, which widened via role_hierarchy, and it had no callers
+# anywhere in the fleet — every service already used require_any_role. Use
+# `require_any_role([role])` for the exact check.
 
 
 def require_any_role(

@@ -5,6 +5,32 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-07-26
+
+### Removed (BREAKING)
+- `AuthContext.has_role()` — widened role checks via `role_hierarchy`, returning
+  True for a role held only through the `parent_role_id` ancestor chain. Every
+  caller was a cross-tenant scope gate, the one place inheritance must not
+  apply, so it could only ever loosen a boundary it was never meant to touch.
+  Use `has_any_role([role])`, the exact check.
+- `AuthContext.role_hierarchy` field — existed solely to feed `has_role`.
+  Dropped from the frozen wire contract (13 → 12 fields).
+- `require_role()` — resolved through `has_role`; had zero callers fleet-wide
+  (every service already used `require_any_role`). Use `require_any_role([role])`.
+
+### Migration
+- Replace `ctx.has_role(X)` with `ctx.has_any_role([X])` and `require_role(X)`
+  with `require_any_role([X])`. On a role graph with no `parent_role_id` links
+  the two are equivalent, so this is behaviour-preserving unless role
+  inheritance is in use — in which case the old call was granting cross-tenant
+  access it should not have.
+- **No coordinated rollout needed.** `AuthContext` uses Pydantic's default
+  `extra="ignore"`: a producer still sending `role_hierarchy` is tolerated, and
+  a consumer on an older lib falls back to the field default. Compatible in
+  both directions, in any deploy order.
+- Producers may stop populating `role_hierarchy` (tr-crm-core drops its
+  recursive `parent_role_id` CTE). The `Role.parent_role_id` column is retained.
+
 ## [0.10.0] - 2026-07-23
 
 ### Changed (BREAKING)
@@ -15,7 +41,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   gates may reference only the two system roles; feature access is permission-based).
 - `DEV_ROLES` default lowercased to `["admin"]`.
 - `has_role` (inherited via role_hierarchy) vs `has_any_role` (exact, no
-  widening) documented; behavior unchanged.
+  widening) documented; behavior unchanged. (`has_role` removed in 0.16.0.)
 
 ### Migration
 - Consumers replace `PlatformRole`→`SystemRole`, `ADMIN_ROLES`→`SYSTEM_ROLES`

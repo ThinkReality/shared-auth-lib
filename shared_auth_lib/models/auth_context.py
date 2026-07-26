@@ -34,7 +34,6 @@ class AuthContext(BaseModel):
     permissions: list[str] = Field(default_factory=list)
     is_active: bool = True
     is_suspended: bool = False
-    role_hierarchy: list[str] = Field(default_factory=list)
 
     correlation_id: str | None = None
     auth_provider: str = "supabase"
@@ -49,18 +48,19 @@ class AuthContext(BaseModel):
         return permission_granted(self.permissions, permission)
 
     def has_any_role(self, roles: list[str]) -> bool:
-        """Exact membership: True if any of ``roles`` is DIRECTLY in ``self.roles``.
-        Does NOT widen via ``role_hierarchy`` — use for scope gates (e.g. the
-        super_admin cross-tenant gate) that must not be satisfied by an inherited
-        ancestor role."""
-        return any(role in self.roles for role in roles)
+        """Exact membership: True if any of ``roles`` is DIRECTLY held.
 
-    def has_role(self, role: str) -> bool:
-        """Inherited membership: True if ``role`` is held directly OR appears in
-        ``role_hierarchy`` (an ancestor via parent_role_id). Use when role
-        inheritance should grant access. For an exact, non-widening check use
-        ``has_any_role([role])``."""
-        return role in self.roles or role in self.role_hierarchy
+        The ONLY role check on AuthContext, deliberately. There was also a
+        ``has_role`` that widened via a ``role_hierarchy`` field — it returned
+        True for a role merely reached through the ``parent_role_id`` chain.
+        Every one of its callers was a cross-tenant scope gate, the exact place
+        inheritance must not apply, so it could only ever loosen a boundary it
+        was never meant to touch. Both it and the field were removed in v0.16.0.
+
+        Role names gate tenant scope only; feature access is permission-based
+        (``has_permission`` / ``require_permission``).
+        """
+        return any(role in self.roles for role in roles)
 
 
 class GatewayIdentityHeaders(BaseModel):

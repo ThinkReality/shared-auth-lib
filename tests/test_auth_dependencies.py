@@ -14,7 +14,6 @@ from shared_auth_lib.dependencies.auth_dependencies import (
     require_any_role,
     require_auth,
     require_permission,
-    require_role,
 )
 from shared_auth_lib.exceptions import AuthContextNotFoundError
 from shared_auth_lib.middleware.identity_middleware import (
@@ -45,7 +44,6 @@ MOCK_AUTH_CONTEXT = AuthContext(
     permissions=["user:read", "listing:create", "listing:read"],
     is_active=True,
     is_suspended=False,
-    role_hierarchy=["admin"],
 )
 
 
@@ -92,20 +90,6 @@ def _create_app(mock_client: AsyncMock) -> FastAPI:
     async def route_require_missing_permission(
         auth: AuthContext = Depends(
             require_permission("user:delete")
-        ),
-    ):
-        return {"user_id": str(auth.user_id)}
-
-    @app.get("/require-role")
-    async def route_require_role(
-        auth: AuthContext = Depends(require_role("admin")),
-    ):
-        return {"user_id": str(auth.user_id)}
-
-    @app.get("/require-missing-role")
-    async def route_require_missing_role(
-        auth: AuthContext = Depends(
-            require_role("super_admin")
         ),
     ):
         return {"user_id": str(auth.user_id)}
@@ -206,25 +190,19 @@ class TestRequirePermission:
         assert "user:delete" in resp.json()["detail"]
 
 
-class TestRequireRole:
-    def test_has_role_passes(self):
-        mock = _mock_client()
-        client = TestClient(_create_app(mock))
-        resp = client.get(
-            "/require-role",
-            headers={"X-User-Id": str(USER_ID)},
-        )
-        assert resp.status_code == 200
+class TestRequireRoleIsGone:
+    """v0.16.0 removed `require_role`: it resolved through the widening
+    `AuthContext.has_role`, and had no callers anywhere in the fleet — every
+    service already used `require_any_role`. Kept as a guard so it is not
+    reintroduced without a deliberate decision."""
 
-    def test_missing_role_returns_403(self):
-        mock = _mock_client()
-        client = TestClient(_create_app(mock))
-        resp = client.get(
-            "/require-missing-role",
-            headers={"X-User-Id": str(USER_ID)},
-        )
-        assert resp.status_code == 403
-        assert "super_admin" in resp.json()["detail"]
+    def test_require_role_is_not_exported(self):
+        import shared_auth_lib
+        from shared_auth_lib.dependencies import auth_dependencies
+
+        assert not hasattr(auth_dependencies, "require_role")
+        assert not hasattr(shared_auth_lib, "require_role")
+        assert "require_role" not in shared_auth_lib.__all__
 
 
 class TestRequireAnyRole:

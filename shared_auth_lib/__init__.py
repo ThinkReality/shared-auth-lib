@@ -15,7 +15,6 @@ from shared_auth_lib.dependencies.auth_dependencies import (
     require_any_role,
     require_auth,
     require_permission,
-    require_role,
 )
 from shared_auth_lib.middleware.hmac_middleware import (
     GatewayHMACMiddleware,
@@ -36,7 +35,7 @@ from shared_auth_lib.services.hmac_verifier import (
     verify_signature,
 )
 
-__version__ = "0.15.0"
+__version__ = "0.16.0"
 
 __all__ = [
     "SYSTEM_ROLES",
@@ -58,6 +57,5 @@ __all__ = [
     "require_auth",
     "require_capability",
     "require_permission",
-    "require_role",
     "verify_signature",
 ]

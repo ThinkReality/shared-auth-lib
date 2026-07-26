@@ -62,7 +62,6 @@ def build_dev_auth_context(
         last_name=last_name,
         roles=roles,
         permissions=permissions,
-        role_hierarchy=[],
         is_active=True,
         is_suspended=False,
         auth_provider="dev",
