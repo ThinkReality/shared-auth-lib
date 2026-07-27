@@ -5,6 +5,18 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.2] - 2026-07-28
+
+### Changed
+- Internal `tr-shared-lib` pin moved to `v0.45.0` (adds `tr_shared.testing`, the
+  fleet-wide raw `X-Tenant-ID` header guard). No behaviour change in this library.
+
+### Notes
+- The pin must move in lockstep with consumers. `uv` honours a git dependency's own
+  `[tool.uv.sources]`, so a consumer on `tr-shared-lib v0.45.0` against a
+  `shared-auth-lib` still pinning `v0.44.0` aborts with
+  `conflicting URLs for package tr-shared-lib`. That is why this release exists.
+
 ## [0.17.1] - 2026-07-27
 
 ### Changed
