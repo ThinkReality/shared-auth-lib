@@ -5,6 +5,18 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.1] - 2026-07-27
+
+### Changed
+- Internal `tr-shared-lib` pin moved to `v0.44.0` (the `Environment` vocabulary
+  SSOT release). No behaviour change in this library.
+
+### Why
+uv honours a git dependency's own `[tool.uv.sources]`, so a consumer pinning
+`tr-shared-lib v0.44.0` while this library still pinned `v0.43.0` aborts with
+`conflicting URLs for package tr-shared-lib`. Every tr-shared-lib bump therefore
+requires a matching shared-auth-lib release in the same step.
+
 ## [0.17.0] - 2026-07-27
 
 ### Changed

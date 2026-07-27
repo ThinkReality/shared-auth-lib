@@ -1,3 +1,11 @@
+"""shared_auth_lib — shared authorization library.
+
+``__version__`` is single-sourced from the installed package metadata (i.e.
+pyproject ``[project].version``) so the two can never drift.
+"""
+
+from importlib.metadata import version
+
 from shared_auth_lib.authz import (
     can,
     permission_granted,
@@ -35,7 +43,7 @@ from shared_auth_lib.services.hmac_verifier import (
     verify_signature,
 )
 
-__version__ = "0.17.0"
+__version__ = version("shared-auth-lib")
 
 __all__ = [
     "SYSTEM_ROLES",
