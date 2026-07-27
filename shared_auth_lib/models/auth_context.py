@@ -57,8 +57,12 @@ class AuthContext(BaseModel):
         inheritance must not apply, so it could only ever loosen a boundary it
         was never meant to touch. Both it and the field were removed in v0.16.0.
 
-        Role names gate tenant scope only; feature access is permission-based
-        (``has_permission`` / ``require_permission``).
+        Role names must NEVER gate tenant scope: both system roles are
+        per-tenant rows (``auth_roles.tenant_id`` is NOT NULL), so every tenant
+        has its own ``super_admin`` and the name carries no platform meaning.
+        Every request is scoped to ``tenant_id``. Feature access is
+        permission-based (``has_permission`` / ``require_permission``); this
+        check exists only for intra-tenant role-assignment rules.
         """
         return any(role in self.roles for role in roles)
 

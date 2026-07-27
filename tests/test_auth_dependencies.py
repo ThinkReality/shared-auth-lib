@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.testclient import TestClient
 
 from shared_auth_lib.dependencies.auth_dependencies import (
@@ -104,13 +104,16 @@ def _create_app(mock_client: AsyncMock) -> FastAPI:
 
     @app.get("/optional-auth")
     async def route_optional_auth(
+        request: Request,
         auth: AuthContext | None = Depends(optional_auth),
     ):
+        state_set = getattr(request.state, "auth_context", None) is not None
         if auth is None:
-            return {"authenticated": False}
+            return {"authenticated": False, "state_set": state_set}
         return {
             "authenticated": True,
             "user_id": str(auth.user_id),
+            "state_set": state_set,
         }
 
     return app
@@ -243,3 +246,42 @@ class TestOptionalAuth:
         )
         assert resp.status_code == 200
         assert resp.json()["authenticated"] is False
+
+    def test_inactive_user_returns_none(self):
+        mock = _mock_client(
+            MOCK_AUTH_CONTEXT.model_copy(update={"is_active": False})
+        )
+        client = TestClient(_create_app(mock))
+        resp = client.get(
+            "/optional-auth",
+            headers={"X-User-Id": str(USER_ID)},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["authenticated"] is False
+
+    def test_suspended_user_returns_none(self):
+        mock = _mock_client(
+            MOCK_AUTH_CONTEXT.model_copy(update={"is_suspended": True})
+        )
+        client = TestClient(_create_app(mock))
+        resp = client.get(
+            "/optional-auth",
+            headers={"X-User-Id": str(USER_ID)},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["authenticated"] is False
+
+    def test_authenticated_user_sets_request_state(self):
+        mock = _mock_client()
+        client = TestClient(_create_app(mock))
+        resp = client.get(
+            "/optional-auth",
+            headers={"X-User-Id": str(USER_ID)},
+        )
+        assert resp.json()["state_set"] is True
+
+    def test_unauthenticated_leaves_request_state_unset(self):
+        mock = _mock_client()
+        client = TestClient(_create_app(mock))
+        resp = client.get("/optional-auth")
+        assert resp.json()["state_set"] is False

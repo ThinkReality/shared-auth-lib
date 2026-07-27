@@ -264,24 +264,37 @@ def require_any_role(
 
 
 async def optional_auth(
+    request: Request,
     identity: GatewayIdentityHeaders = Depends(get_gateway_identity),
     client: AuthContextProvider = Depends(get_auth_context_client),
 ) -> AuthContext | None:
     """Optional authentication dependency.
 
-    Returns AuthContext if the user is authenticated, None otherwise.
-    Does not raise 401 for unauthenticated requests.
+    Returns AuthContext if the user is authenticated, active and not suspended;
+    None otherwise. Does not raise 401 for unauthenticated requests. The
+    liveness checks mirror ``require_auth`` — an unauthenticated caller and a
+    suspended one must be indistinguishable here, or a suspended account keeps
+    whatever elevated behaviour the route grants an authenticated user.
     """
     if not identity.user_id:
         return None
 
     try:
-        return await client.get_auth_context(
+        auth_context = await client.get_auth_context(
             identity.user_id,
             correlation_id=identity.correlation_id,
         )
     except AuthContextNotFoundError:
         return None
+
+    if not auth_context.is_active or auth_context.is_suspended:
+        return None
+
+    auth_context = auth_context.model_copy(
+        update={"correlation_id": identity.correlation_id}
+    )
+    request.state.auth_context = auth_context
+    return auth_context
 
 
 async def get_current_user(

@@ -5,6 +5,24 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-07-27
+
+### Changed
+- `optional_auth` now rejects inactive and suspended accounts (returns `None`,
+  matching an unauthenticated caller) and sets `request.state.auth_context`,
+  mirroring `require_auth`. Takes a `request: Request` parameter — a signature
+  change, but FastAPI injects it, so no call site changes.
+- `constants/roles.py` and `AuthContext.has_any_role` docs corrected: both
+  system roles are **per-tenant** rows (`auth_roles.tenant_id` is NOT NULL), so
+  a role name confers no cross-tenant scope and must never gate tenant scope.
+  These comments were the upstream SSOT of the cross-tenant leak being removed
+  in the tenant-isolation remediation.
+- Internal `tr-shared-lib` pin `v0.42.1` → `v0.43.0`.
+
+### Fixed
+- `__version__` was stuck at `0.16.0` while `pyproject.toml` said `0.16.1`,
+  failing `test_version_parity`. Both now read `0.17.0`.
+
 ## [0.16.0] - 2026-07-26
 
 ### Removed (BREAKING)
