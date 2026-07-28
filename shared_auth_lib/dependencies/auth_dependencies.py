@@ -83,8 +83,28 @@ def get_auth_context_client() -> AuthContextProvider:
     """Return the initialized AuthContextClient.
 
     Raises RuntimeError if init_auth_context_client() was not called.
+
+    This is also the seam tests use. ``require_auth`` resolves the provider via
+    ``Depends(get_auth_context_client)``, so a test can substitute an in-process
+    fake with ``app.dependency_overrides[get_auth_context_client] = ...`` and
+    still run the real HMAC verification, identity extraction and ``require_auth``
+    logic. Overriding is strictly better than registering through
+    ``init_auth_context_client()`` in a test: every downstream service registers
+    its real client inside its lifespan, which would overwrite a pre-registered
+    fake, while a dependency override cannot be clobbered.
     """
     return _AuthClientRegistry.get()
+
+
+def reset_auth_context_client() -> None:
+    """Clear the process-wide provider registry.
+
+    Exists so tests stop reaching into ``_AuthClientRegistry`` directly. Only
+    useful for suites that deliberately register a provider process-wide; the
+    supported way to inject one for a single app is a dependency override on
+    ``get_auth_context_client``.
+    """
+    _AuthClientRegistry.reset()
 
 
 async def require_auth(
