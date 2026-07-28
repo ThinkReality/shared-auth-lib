@@ -5,8 +5,8 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from tr_shared.contracts import Environment
 
-_DEV_ENVIRONMENTS = {"dev", "development", "local"}
 _DEV_UUID = UUID("00000000-0000-0000-0000-000000000001")
 
 
@@ -18,7 +18,13 @@ class AuthLibSettings(BaseSettings):
     """
 
     GATEWAY_SIGNING_SECRET: str
-    ENVIRONMENT: str = "development"
+    # Reads the PLATFORM variable, not AUTH_LIB_ENVIRONMENT. One concept, one
+    # variable: the prefixed form used to shadow this, so a service's own bypass
+    # validator could pass while this guard saw a different value.
+    ENVIRONMENT: Environment = Field(
+        default=Environment.DEVELOPMENT,
+        validation_alias="ENVIRONMENT",
+    )
     CRM_CORE_URL: str = "http://tr-crm-core:8000"
     SERVICE_TOKEN: str = ""
     GATEWAY_TIMESTAMP_TOLERANCE: int = 30
@@ -42,7 +48,7 @@ class AuthLibSettings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_config(self) -> "AuthLibSettings":
-        if self.ENVIRONMENT in ("production", "staging"):
+        if self.ENVIRONMENT in (Environment.PRODUCTION, Environment.STAGING):
             if not self.SERVICE_TOKEN or not self.SERVICE_TOKEN.strip():
                 raise ValueError(
                     f"AUTH_LIB_SERVICE_TOKEN must not be empty in {self.ENVIRONMENT}"
@@ -63,12 +69,11 @@ class AuthLibSettings(BaseSettings):
     def validate_dev_bypass(self) -> "AuthLibSettings":
         if not self.DEV_MODE_BYPASS:
             return self
-        if self.ENVIRONMENT not in _DEV_ENVIRONMENTS:
+        if not self.ENVIRONMENT.is_local:
             raise ValueError(
-                f"AUTH_LIB_DEV_MODE_BYPASS=true is only allowed when "
-                f"AUTH_LIB_ENVIRONMENT is one of {_DEV_ENVIRONMENTS}, "
-                f"but got '{self.ENVIRONMENT}'. This is a safety guard "
-                f"to prevent dev mode from running in production."
+                f"AUTH_LIB_DEV_MODE_BYPASS=true is only allowed when ENVIRONMENT "
+                f"is 'development' or 'test', but got '{self.ENVIRONMENT}'. This "
+                f"is a safety guard to prevent dev mode from running in production."
             )
         return self
 

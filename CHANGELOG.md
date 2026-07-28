@@ -5,6 +5,30 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-07-29
+
+### Changed (BREAKING)
+- `AuthLibSettings.ENVIRONMENT` now reads the platform `ENVIRONMENT` variable
+  directly (`validation_alias="ENVIRONMENT"`), not `AUTH_LIB_ENVIRONMENT`. Also
+  retyped `str` → `Environment` (from `tr_shared.contracts`, pinned `v0.48.0`).
+  `AUTH_LIB_ENVIRONMENT` is no longer read anywhere.
+
+### Why
+Two variables for one concept let a service's own bypass validator (reading
+`ENVIRONMENT`) pass while this library's guard (reading `AUTH_LIB_ENVIRONMENT`)
+saw a different value — a split-brain that could silently disagree.
+
+### Migration
+Delete `AUTH_LIB_ENVIRONMENT` from every config surface (compose, `.env`,
+conftest). Set the platform `ENVIRONMENT` to one of `development`, `test`,
+`staging`, `production` — the library now reads that value.
+
+### Note
+`AuthLibSettings.model_config` sets `env_file=".env"`, so after this change the
+library reads a bare `ENVIRONMENT=` line from whatever `.env` is in CWD — a new
+coupling. Benign post-Task-10 (every service's `.env` now carries the canonical
+value), but it is a behaviour change worth knowing about.
+
 ## [0.17.6] - 2026-07-29
 
 ### Changed

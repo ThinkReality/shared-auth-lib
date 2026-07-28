@@ -13,6 +13,7 @@ from starlette.requests import Request
 from starlette.testclient import TestClient
 
 from shared_auth_lib._dev_headers import build_dev_auth_context
+from shared_auth_lib.config import AuthLibSettings
 from shared_auth_lib.models.auth_context import AuthContext
 
 _DEV_UUID = UUID("00000000-0000-0000-0000-000000000001")
@@ -37,7 +38,7 @@ def _make_request(headers: dict[str, str] | None = None) -> Request:
 def _dev_env() -> dict[str, str]:
     return {
         "AUTH_LIB_GATEWAY_SIGNING_SECRET": "test-secret",
-        "AUTH_LIB_ENVIRONMENT": "dev",
+        "ENVIRONMENT": "development",
         "AUTH_LIB_DEV_MODE_BYPASS": "true",
     }
 
@@ -53,9 +54,10 @@ class TestDevBypassSettings:
 
         env = {
             "AUTH_LIB_GATEWAY_SIGNING_SECRET": "test-secret",
-            "AUTH_LIB_ENVIRONMENT": "dev",
+            "ENVIRONMENT": "development",
             "AUTH_LIB_DEV_MODE_BYPASS": "false",
-            **{f"AUTH_LIB_{k}": str(v) for k, v in overrides.items()},
+            **{f"AUTH_LIB_{k}": str(v) for k, v in overrides.items() if k != "ENVIRONMENT"},
+            **({"ENVIRONMENT": str(overrides["ENVIRONMENT"])} if "ENVIRONMENT" in overrides else {}),
         }
         with patch.dict(os.environ, env, clear=False):
             return AuthLibSettings()
@@ -63,18 +65,14 @@ class TestDevBypassSettings:
     def test_bypass_off_by_default(self):
         assert self._build_settings().DEV_MODE_BYPASS is False
 
-    def test_bypass_on_in_dev(self):
-        s = self._build_settings(DEV_MODE_BYPASS="true", ENVIRONMENT="dev")
+    def test_bypass_on_in_development(self):
+        s = self._build_settings(DEV_MODE_BYPASS="true", ENVIRONMENT="development")
         assert s.DEV_MODE_BYPASS is True
         assert s.DEV_USER_ID == _DEV_UUID
         assert s.DEV_PERMISSIONS == ["*"]
 
-    def test_bypass_on_in_development(self):
-        s = self._build_settings(DEV_MODE_BYPASS="true", ENVIRONMENT="development")
-        assert s.DEV_MODE_BYPASS is True
-
-    def test_bypass_on_in_local(self):
-        s = self._build_settings(DEV_MODE_BYPASS="true", ENVIRONMENT="local")
+    def test_bypass_on_in_test(self):
+        s = self._build_settings(DEV_MODE_BYPASS="true", ENVIRONMENT="test")
         assert s.DEV_MODE_BYPASS is True
 
     def test_bypass_rejected_in_production(self):
@@ -94,6 +92,35 @@ class TestDevBypassSettings:
                 SERVICE_TOKEN="real-token",
                 CRM_CORE_URL="http://tr-crm-core:8000",
             )
+
+
+class TestSingleEnvironmentVariable:
+    """One concept, one variable. AUTH_LIB_ENVIRONMENT used to shadow the
+    platform's ENVIRONMENT, letting a service's own bypass validator pass while
+    the library's guard read a different value."""
+
+    def test_reads_the_platform_environment_variable(self, monkeypatch):
+        monkeypatch.setenv("ENVIRONMENT", "staging")
+        monkeypatch.delenv("AUTH_LIB_ENVIRONMENT", raising=False)
+        s = AuthLibSettings(
+            GATEWAY_SIGNING_SECRET="s",
+            SERVICE_TOKEN="t",
+            CRM_CORE_URL="http://tr-crm-core:8000",
+        )
+        assert s.ENVIRONMENT == "staging"
+
+    def test_auth_lib_prefixed_variable_is_no_longer_read(self, monkeypatch):
+        monkeypatch.setenv("ENVIRONMENT", "production")
+        monkeypatch.setenv("AUTH_LIB_ENVIRONMENT", "development")
+        s = AuthLibSettings(
+            GATEWAY_SIGNING_SECRET="s",
+            SERVICE_TOKEN="t",
+            CRM_CORE_URL="http://tr-crm-core:8000",
+        )
+        assert s.ENVIRONMENT == "production", (
+            "AUTH_LIB_ENVIRONMENT must not override the platform ENVIRONMENT — "
+            "that shadowing is the split-brain this change removes."
+        )
 
 
 # ── AuthContext builder: env defaults ──

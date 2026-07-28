@@ -23,8 +23,10 @@ Each downstream service must set these:
 | `AUTH_LIB_GATEWAY_SIGNING_SECRET` | Yes | - | HMAC shared secret (must match gateway) |
 | `AUTH_LIB_CRM_CORE_URL` | No | `http://tr-crm-core:8000` | CRM-backend base URL |
 | `AUTH_LIB_SERVICE_TOKEN` | No | `""` | Service token for internal API calls |
-| `AUTH_LIB_ENVIRONMENT` | No | `development` | Environment name |
 | `AUTH_LIB_GATEWAY_TIMESTAMP_TOLERANCE` | No | `30` | Max age (seconds) for gateway timestamps |
+
+The library reads the platform's `ENVIRONMENT` variable directly — there is no
+separate `AUTH_LIB_ENVIRONMENT`. One concept, one variable.
 
 ## Integration Guide
 
