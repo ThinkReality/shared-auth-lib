@@ -17,6 +17,7 @@ identity extraction and ``require_auth`` all execute for real.
 from shared_auth_lib.testing._gateway import (
     FakeAuthContextProvider,
     Persona,
+    async_signed_client,
     gateway_auth,
     signed_client,
 )
@@ -24,6 +25,7 @@ from shared_auth_lib.testing._gateway import (
 __all__ = [
     "FakeAuthContextProvider",
     "Persona",
+    "async_signed_client",
     "gateway_auth",
     "signed_client",
 ]

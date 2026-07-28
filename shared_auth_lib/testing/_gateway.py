@@ -46,7 +46,13 @@ from uuid import UUID, uuid4
 if TYPE_CHECKING:  # pragma: no cover - typing only
     import httpx
 
-__all__ = ["FakeAuthContextProvider", "Persona", "gateway_auth", "signed_client"]
+__all__ = [
+    "FakeAuthContextProvider",
+    "Persona",
+    "async_signed_client",
+    "gateway_auth",
+    "signed_client",
+]
 
 
 @dataclass(frozen=True)
@@ -232,6 +238,71 @@ def signed_client(
     client = _SignedTestClient(app, **client_kwargs)
     client.auth = auth
     client.headers.update(resolved_persona.headers())
+    client.persona = resolved_persona  # type: ignore[attr-defined]
+    client.auth_provider = provider  # type: ignore[attr-defined]
+    return client
+
+
+def async_signed_client(
+    app: Any,
+    persona: Persona | None = None,
+    *,
+    secret: str | None = None,
+    **client_kwargs: Any,
+) -> Any:
+    """The ``signed_client`` contract over an ASGI transport, for async test suites.
+
+    ``signed_client`` wraps FastAPI's synchronous ``TestClient``; several
+    services drive their app through ``httpx.AsyncClient(transport=ASGITransport)``
+    instead and cannot use it as-is. Same persona, same gateway_auth signer, same
+    dependency-override seam — only the transport differs.
+    """
+    from httpx import ASGITransport, AsyncClient
+    from shared_auth_lib.dependencies.auth_dependencies import get_auth_context_client
+
+    resolved_persona = persona or Persona()
+    provider = FakeAuthContextProvider(resolved_persona)
+    auth = gateway_auth(secret)
+
+    class _AsyncSignedClient(AsyncClient):
+        """Removes its own dependency override when it goes out of scope.
+
+        Both exits are overridden on purpose, and neither can be dropped.
+        Unlike Starlette's ``TestClient.__exit__`` (which never calls ``close()``),
+        httpx's ``AsyncClient.__aexit__`` never calls ``aclose()`` either — it
+        tears down the transport directly. So a caller using ``async with`` hits
+        only ``__aexit__``, and a caller calling ``aclose()`` directly never
+        reaches ``__aexit__``. Both must remove the override or one usage leaks it.
+        """
+
+        def _remove_override(self) -> None:
+            if app.dependency_overrides.get(get_auth_context_client) is _provide:
+                del app.dependency_overrides[get_auth_context_client]
+
+        async def aclose(self) -> None:
+            try:
+                await super().aclose()
+            finally:
+                self._remove_override()
+
+        async def __aexit__(self, *exc_info: Any) -> None:
+            try:
+                await super().__aexit__(*exc_info)
+            finally:
+                self._remove_override()
+
+    def _provide() -> FakeAuthContextProvider:
+        return provider
+
+    app.dependency_overrides[get_auth_context_client] = _provide
+
+    client = _AsyncSignedClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+        auth=auth,
+        headers=resolved_persona.headers(),
+        **client_kwargs,
+    )
     client.persona = resolved_persona  # type: ignore[attr-defined]
     client.auth_provider = provider  # type: ignore[attr-defined]
     return client
