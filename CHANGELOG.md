@@ -5,6 +5,13 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.6] - 2026-07-29
+
+### Changed
+- Internal `tr-shared-lib` pin moved to `v0.48.0` (`BaseServiceSettings.ENVIRONMENT`
+  is now typed `Environment`, not `str` — see that release's notes). No behaviour
+  change in this library.
+
 ## [0.17.5] - 2026-07-29
 
 ### Changed
