@@ -82,7 +82,9 @@ class Persona:
         the bypass enabled. Same expressiveness, and now the signature and
         identity layers run too.
         """
-        return replace_permissions(self, tuple(p for p in self.permissions if p != permission))
+        return replace_permissions(
+            self, tuple(p for p in self.permissions if p != permission)
+        )
 
     def with_permissions(self, *permissions: str) -> Persona:
         return replace_permissions(self, tuple(permissions))
@@ -197,7 +199,9 @@ def signed_client(
     others; this function removes just the one key it added, on ``close()``.
     """
     from fastapi.testclient import TestClient
-    from shared_auth_lib.dependencies.auth_dependencies import get_auth_context_client
+    from shared_auth_lib.dependencies.auth_dependencies import (
+        get_auth_context_client,
+    )
 
     resolved_persona = persona or Persona()
     provider = FakeAuthContextProvider(resolved_persona)
@@ -258,7 +262,9 @@ def async_signed_client(
     dependency-override seam — only the transport differs.
     """
     from httpx import ASGITransport, AsyncClient
-    from shared_auth_lib.dependencies.auth_dependencies import get_auth_context_client
+    from shared_auth_lib.dependencies.auth_dependencies import (
+        get_auth_context_client,
+    )
 
     resolved_persona = persona or Persona()
     provider = FakeAuthContextProvider(resolved_persona)
