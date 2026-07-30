@@ -6,8 +6,17 @@ the canonical string of EVERY request — a gateway on one version and a service
 another produce different signatures and every route 403s.
 
 This test exists so that change can only ever be deliberate. If it fails, you are
-about to break the fleet: read plans/2026-07-25-tenant-site-registry-p1-implementation.md
-Task 3 before touching it.
+about to break the fleet. The safe procedure, learned when X-Site-Id was added:
+
+  1. Ship the contract change ALONE — the new member present in SIGNED_HEADERS but
+     populated by nobody. Absent everywhere means both sides append the same "",
+     so the canonical string is unchanged in practice.
+  2. Re-pin and deploy the gateway and EVERY downstream service together. This
+     step must not be rolled out incrementally.
+  3. Only then start populating the header.
+
+Verify step 2 with a live authenticated request through the gateway to every
+service: 200, not 403.
 """
 
 from shared_auth_lib.constants.headers import SIGNED_HEADERS, SignedHeader
