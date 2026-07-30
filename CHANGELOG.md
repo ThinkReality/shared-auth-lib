@@ -5,6 +5,13 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.5] - 2026-07-30
+
+### Changed
+- Internal `tr-shared-lib` pin bumped `v0.49.2` → `v0.49.3` (no code change in
+  this lib — pin-only bump so downstream consumers pinning the new
+  `tr-shared-lib` tag don't hit `conflicting URLs for package tr-shared-lib`).
+
 ## [0.18.1] - 2026-07-29
 
 ### Changed
