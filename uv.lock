@@ -670,7 +670,7 @@ wheels = [
 
 [[package]]
 name = "shared-auth-lib"
-version = "0.18.3"
+version = "0.18.4"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
@@ -700,7 +700,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "starlette", specifier = ">=0.27.0" },
-    { name = "tr-shared-lib", extras = ["http", "logging"], git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.49.1" },
+    { name = "tr-shared-lib", extras = ["http", "logging"], git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.49.2" },
 ]
 
 [package.metadata.requires-dev]
@@ -747,8 +747,8 @@ wheels = [
 
 [[package]]
 name = "tr-shared-lib"
-version = "0.49.1"
-source = { git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.49.1#161bbcdcacaf27081bc4dd8ffe30a9c4e6c7db97" }
+version = "0.49.2"
+source = { git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.49.2#b4168617e7de397bfd7cdab0ce9e144e228accb4" }
 dependencies = [
     { name = "pydantic-settings" },
 ]
