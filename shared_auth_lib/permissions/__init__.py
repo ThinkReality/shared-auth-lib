@@ -117,6 +117,11 @@ from shared_auth_lib.permissions.task import (
     TASK_EDIT,
     TASK_VIEW,
 )
+from shared_auth_lib.permissions.wam import (
+    WAM_BROADCAST_READ,
+    WAM_BROADCAST_SEND,
+    WAM_SESSION_MANAGE,
+)
 
 __all__ = [
     # registry
@@ -223,4 +228,8 @@ __all__ = [
     "TASK_DELETE",
     "TASK_EDIT",
     "TASK_VIEW",
+    # wam
+    "WAM_BROADCAST_READ",
+    "WAM_BROADCAST_SEND",
+    "WAM_SESSION_MANAGE",
 ]

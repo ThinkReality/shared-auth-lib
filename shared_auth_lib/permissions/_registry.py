@@ -22,6 +22,7 @@ from shared_auth_lib.permissions import (
     media,
     scraping,
     task,
+    wam,
 )
 
 
@@ -147,6 +148,13 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(dld.DLD_OWNERS_IDENTITY, "Read DLD owner identity details"),
     # property (realty scraping area)
     _d(scraping.PROPERTY_SCRAPING_CACHE_FLUSH, "Flush the property scraper cache"),
+    # wam
+    _d(
+        wam.WAM_SESSION_MANAGE,
+        "Connect and disconnect the tenant's WhatsApp session",
+    ),
+    _d(wam.WAM_BROADCAST_READ, "View WhatsApp broadcasts and their recipients"),
+    _d(wam.WAM_BROADCAST_SEND, "Create and send WhatsApp broadcasts"),
 )
 
 
