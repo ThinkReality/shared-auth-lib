@@ -12,11 +12,33 @@ design, which makes them non-indexable — and the gateway's whole lookup is
 
 import hashlib
 import secrets
+from enum import StrEnum
 from typing import Final
 
 SITE_KEY_PREFIX: Final[str] = "sk_live_"
 _ENTROPY_BYTES: Final[int] = 32
 _DISPLAY_PREFIX_LEN: Final[int] = 20
+
+
+class SiteStatus(StrEnum):
+    """Lifecycle of a registered site. Issued by tr-crm-core, enforced by tr-api-gateway.
+
+    Two members only. There is deliberately no PENDING_VERIFICATION: domain ownership
+    is not verified (D9) — the key is the credential, and a wrong primary_domain can
+    only produce wrong canonical URLs for the tenant that typed it, never access to
+    another tenant's data.
+
+    Lives beside ``hash_site_key`` for the same reason that function does, and the
+    reason is in this module's own docstring: a producer/verifier pair holding two
+    private copies of one vocabulary drifts silently. It did. The gateway typed the
+    field ``str`` and re-declared a private ``_SITE_STATUS_ACTIVE = "active"``, so a
+    third member added on the issuing side alone would have made the gateway deny
+    every such site with **the wrong reason** — 403 "This site is suspended" for a
+    site that is not suspended — with nothing failing in either repo (A12).
+    """
+
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
 
 
 def generate_site_key() -> tuple[str, str, str]:

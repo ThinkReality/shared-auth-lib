@@ -5,6 +5,40 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.6] - 2026-07-30
+
+### Added
+- `shared_auth_lib.site_keys.SiteStatus` — `StrEnum` with `ACTIVE = "active"` and
+  `SUSPENDED = "suspended"`. The site-status vocabulary now has one definition,
+  beside `hash_site_key`, which is the other half of the same producer/verifier
+  contract.
+
+### Why
+tr-crm-core ISSUES site keys and owns the site lifecycle; tr-api-gateway VERIFIES
+them and enforces that lifecycle. The status vocabulary was declared twice — a
+`StrEnum` in crm-core's `TenantSite` model, and in the gateway an untyped
+`status: str` plus a private `_SITE_STATUS_ACTIVE = "active"`.
+
+The drift is silent in the dangerous direction. Add a third member in crm-core —
+`archived`, say — and the gateway compares it against `"active"`, finds it unequal,
+and returns **403 "This site is suspended"** for a site that is not suspended. Wrong
+reason, no exception, nothing failing at build or test time in either repo.
+
+This is exactly the failure mode `hash_site_key` was moved here to prevent, as that
+module's docstring already states: *"Both import from here so the two can never
+drift: a mismatch would not raise, it would simply make every key fail to resolve."*
+Hashing was made undriftable; the vocabulary travelling on the same wire, in the same
+request, between the same two services, was not (A12).
+
+### Migration
+None for this library — additive. Consumers that adopt it should type the boundary,
+not just import the name: with `ResolvedSite.status: SiteStatus`, a status the
+gateway's copy does not know now **raises at validation** instead of being silently
+treated as not-active. That is the intended behavior change (A12 Option A): a version
+skew between issuer and verifier is a deployment error and should say so, rather than
+telling a healthy site it is suspended. It cannot fail open — an unknown status is
+never `ACTIVE` under either behaviour.
+
 ## [0.18.5] - 2026-07-30
 
 ### Changed
