@@ -5,6 +5,22 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.4] - 2026-07-31
+
+### Changed
+- Internal `tr-shared-lib` pin bumped `v0.52.0` → `v0.53.0` (no code change in this
+  library).
+
+### Why
+`v0.53.0` adds G14: the pytest plugin refuses a run whose interpreter belongs to another
+service's `.venv`. This library's pin has to move for consumers to adopt it — uv honours a
+git dependency's own `[tool.uv.sources]`, so a mismatch here aborts every consumer's
+`uv lock` with `conflicting URLs for package tr-shared-lib`.
+
+### Migration
+None. Consumers move both pins together:
+`bash scripts/upgrade-shared-libs.sh v0.53.0 v0.19.4`.
+
 ## [0.19.3] - 2026-07-31
 
 ### Changed
