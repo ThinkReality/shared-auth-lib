@@ -5,6 +5,71 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.3] - 2026-07-31
+
+### Changed
+- Internal `tr-shared-lib` pin bumped `v0.51.0` → `v0.52.0` (no code change in this
+  library).
+
+### Why
+uv honours a git dependency's OWN `[tool.uv.sources]`; it is not overridden by the
+top-level consumer's. So this library's internal pin must match what consumers pin,
+or `uv lock` aborts with `conflicting URLs for package tr-shared-lib`. Cutting this
+tag is therefore not optional bookkeeping — it is what makes `tr-shared-lib v0.52.0`
+adoptable by anything at all.
+
+`v0.52.0` carries the test-lane fix (a unit-lane run no longer provisions a
+container it cannot use) plus a repo-wide ruff reformat. Nothing in this library's
+API is affected.
+
+### Migration
+None. Consumers move both pins together:
+`bash scripts/upgrade-shared-libs.sh v0.52.0 v0.19.3`.
+
+## [0.19.2] - 2026-07-31
+
+### Changed
+- Internal `tr-shared-lib` pin bumped `v0.50.0` → `v0.51.0`, for
+  `HttpHeader.ORIGINAL_IP` (no code change in this library).
+
+### Why
+Pin-only release. `0.19.1` was never cut — the version string never existed in
+`pyproject.toml`, so the gap in this file is real history, not a missing entry.
+
+### Migration
+None.
+
+## [0.19.0] - 2026-07-30
+
+### Added
+- `shared_auth_lib.permissions.wam` — `WAM_SESSION_MANAGE` (`wam:session:manage`),
+  `WAM_BROADCAST_READ` (`wam:broadcast:read`), `WAM_BROADCAST_SEND`
+  (`wam:broadcast:send`), all re-exported from `shared_auth_lib.permissions` and
+  registered in the permission registry.
+
+### Changed
+- `tests/test_signed_header_contract.py` now documents the safe procedure for
+  changing `SIGNED_HEADERS`, learned when `X-Site-Id` was added: ship the contract
+  change alone (a member present but populated by nobody appends the same `""` on
+  both sides, so the canonical string is unchanged in practice), then re-pin and
+  deploy the gateway and every downstream service **together**, and only then start
+  populating the header. Verify the middle step with a live authenticated request
+  through the gateway to every service — 200, not 403.
+
+### Why
+The prefix is `wam`, not `whatsapp`, because the prefix must be a member of the
+Feature spine (`tr_shared.contracts.taxonomy.Feature.WAM`); `tests/test_permissions.py`
+rejects anything else. These gate WAM's *gateway* surface only — its S2S routes live
+under `/api/v1/internal/` and are gated by `X-Service-Token`, so they carry no
+permission.
+
+Despite its commit message, this release adds **no** new signed header:
+`constants/headers.py` is untouched. Only the contract test's documentation changed.
+
+### Migration
+Additive. WAM consumes these via `require_permission(...)`; no other service is
+affected.
+
 ## [0.18.6] - 2026-07-30
 
 ### Added
