@@ -90,7 +90,7 @@ class TestGatewayHMACMiddleware:
         )
         assert resp.status_code == 403
         body = resp.json()
-        assert body["error"]["code"] == "HMAC_MISSING_HEADERS"
+        assert body["error"]["code"] == "AUTHLIB_AUTH_008"
 
     def test_missing_timestamp_returns_403(self):
         client = TestClient(_create_app())
@@ -102,7 +102,7 @@ class TestGatewayHMACMiddleware:
         )
         assert resp.status_code == 403
         body = resp.json()
-        assert body["error"]["code"] == "HMAC_MISSING_HEADERS"
+        assert body["error"]["code"] == "AUTHLIB_AUTH_008"
 
     def test_invalid_signature_returns_403(self):
         client = TestClient(_create_app())
@@ -116,7 +116,7 @@ class TestGatewayHMACMiddleware:
         )
         assert resp.status_code == 403
         body = resp.json()
-        assert body["error"]["code"] == "HMAC_INVALID_SIGNATURE"
+        assert body["error"]["code"] == "AUTHLIB_AUTH_009"
 
     def test_health_skipped_by_default(self):
         client = TestClient(_create_app())
@@ -227,7 +227,7 @@ class TestGatewayHMACReplayProtection:
 
         replay = client.get("/protected", headers=headers)
         assert replay.status_code == 403
-        assert replay.json()["error"]["code"] == "HMAC_REPLAY"
+        assert replay.json()["error"]["code"] == "AUTHLIB_AUTH_010"
 
     def test_distinct_signatures_not_treated_as_replay(self):
         client = TestClient(_create_app_with_redis(_FakeAsyncRedis()))
@@ -257,7 +257,7 @@ class TestGatewayHMACReplayProtection:
         headers = _sign_headers()
         resp = client.get("/protected", headers=headers)
         assert resp.status_code == 403
-        assert resp.json()["error"]["code"] == "HMAC_REPLAY"
+        assert resp.json()["error"]["code"] == "AUTHLIB_AUTH_010"
 
     def test_forged_tenant_id_returns_403(self):
         client = TestClient(_create_app())
@@ -267,7 +267,7 @@ class TestGatewayHMACReplayProtection:
         resp = client.get("/protected", headers=headers)
         assert resp.status_code == 403
         body = resp.json()
-        assert body["error"]["code"] == "HMAC_INVALID_SIGNATURE"
+        assert body["error"]["code"] == "AUTHLIB_AUTH_009"
 
     def test_no_headers_on_non_skip_path_returns_403(self):
         client = TestClient(_create_app())
