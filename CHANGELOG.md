@@ -5,6 +5,23 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.5] - 2026-08-01
+
+### Changed
+- Internal `tr-shared-lib` pin bumped `v0.53.0` → `v0.54.0` (no code change in this
+  library).
+
+### Why
+`v0.54.0` adds `tr_shared.phone` (behind the new opt-in `phone` extra) for DLD
+owner-phone normalisation. This library's pin has to move for consumers to adopt it —
+uv honours a git dependency's own `[tool.uv.sources]`, so a mismatch here aborts
+every consumer's `uv lock` with `conflicting URLs for package tr-shared-lib`.
+
+### Migration
+None. This library does not use `tr_shared.phone` and deliberately does not add the
+extra. Consumers move both pins together:
+`bash scripts/upgrade-shared-libs.sh v0.54.0 v0.19.5`.
+
 ## [0.19.4] - 2026-07-31
 
 ### Changed
