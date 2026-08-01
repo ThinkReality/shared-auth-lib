@@ -5,6 +5,66 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-08-02
+
+Authorization convergence (W2'). Two authorization systems existed here and
+disagreed, while one declared itself the only one: `require_capability` raised
+`AuthorizationError` — canonical envelope, error code, traceable — while
+`require_permission` next door raised a bare `HTTPException`, whose handler
+stamps `HTTP_403` and leaves the reason as free text. **Every
+`require_permission` denial in the fleet violated the Response Shapes rule.**
+
+### Changed
+- **BREAKING (wire).** All six `raise HTTPException` sites in
+  `dependencies/auth_dependencies.py` now raise `tr_shared.exceptions`
+  `AuthenticationError` / `AuthorizationError`, under a new `AUTHLIB_` prefix.
+  shared-auth-lib is a library with no owning service, so it needs its own
+  prefix; `AUTH_` is not a service prefix and collides with the unprefixed
+  `AUTH_001` / `FORBIDDEN_001` defaults in `tr_shared.exceptions`.
+
+  | Code | Status | Condition |
+  |---|---|---|
+  | `AUTHLIB_AUTH_001` | 401 | no user identity on the request |
+  | `AUTHLIB_AUTH_002` | 401 | auth context not found / expired |
+  | `AUTHLIB_AUTH_003` | 401 | account inactive |
+  | `AUTHLIB_AUTH_004` | 403 | account suspended |
+  | `AUTHLIB_AUTH_005` | 403 | `require_permission` denied |
+  | `AUTHLIB_AUTH_006` | 403 | `require_any_role` denied |
+  | `AUTHLIB_AUTH_007` | 403 | `require_capability` denied (previously no code) |
+  | `AUTHLIB_AUTH_008` | 403 | HMAC signature headers missing |
+  | `AUTHLIB_AUTH_009` | 403 | HMAC signature invalid |
+  | `AUTHLIB_AUTH_010` | 403 | HMAC signature replayed |
+
+  The denial reason moves from `error.message` to `error.detail`, and becomes
+  identifiable by `code` rather than by substring match:
+
+  ```
+  before  {"error": {"message": "Permission required: user:delete", "code": "HTTP_403"}}
+  after   {"error": {"message": "Authorization failed", "code": "AUTHLIB_AUTH_005",
+                     "detail": "Permission required: user:delete"}}
+  ```
+
+- The three HMAC rejections now go through `build_error_envelope` and carry
+  `correlation_id`, which they previously omitted. Their codes were
+  `HMAC_MISSING_HEADERS` / `HMAC_INVALID_SIGNATURE` / `HMAC_REPLAY` — unprefixed,
+  so they honoured no `{PREFIX}_{CATEGORY}_{NUMBER}` contract.
+
+- Internal `tr-shared-lib` pin bumped `v0.55.0` → `v0.56.0`, which is **required**:
+  the 401 keeps its `WWW-Authenticate` challenge only because `BaseAPIException`
+  now accepts `headers`. This file is the fleet's only producer of that header.
+
+### Added
+- `tests/test_no_raw_httpexception.py` — no `raise HTTPException` anywhere under
+  `dependencies/` or `authz/`. Guards the rule, not the six converted sites, so a
+  new dependency reaching for `HTTPException` fails immediately by file and line.
+  Proven red by mutation before being trusted.
+
+### Fixed
+- `tests/test_auth_dependencies.py` builds its app with
+  `register_exception_handlers`, as every real service does. Without them the app
+  fell back to Starlette's renderer, so these tests asserted a body shape no
+  service returns — and would have kept passing while the real envelope regressed.
+
 ## [0.19.6] - 2026-08-01
 
 ### Changed

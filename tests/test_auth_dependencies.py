@@ -6,6 +6,7 @@ from uuid import uuid4
 import pytest
 from fastapi import Depends, FastAPI, Request
 from fastapi.testclient import TestClient
+from tr_shared.middleware import register_exception_handlers
 
 from shared_auth_lib.dependencies.auth_dependencies import (
     _AuthClientRegistry,
@@ -66,6 +67,11 @@ def _mock_client(
 def _create_app(mock_client: AsyncMock) -> FastAPI:
     app = FastAPI()
     app.add_middleware(IdentityExtractionMiddleware)
+    # Every service in the fleet installs these at startup. Without them this app
+    # fell back to Starlette's default renderer, so these tests asserted a body
+    # shape that no service actually returns — and would have kept passing while
+    # the real canonical envelope regressed.
+    register_exception_handlers(app)
 
     init_auth_context_client(mock_client)
 
@@ -135,6 +141,9 @@ class TestRequireAuth:
         client = TestClient(_create_app(mock))
         resp = client.get("/require-auth")
         assert resp.status_code == 401
+        assert resp.json()["error"]["code"] == "AUTHLIB_AUTH_001"
+        # RFC 9110 §11.6.1: a 401 must name the scheme the client should use.
+        assert resp.headers["www-authenticate"] == "Bearer"
 
     def test_user_not_found_returns_401(self):
         mock = _mock_client(raise_not_found=True)
@@ -156,7 +165,8 @@ class TestRequireAuth:
             headers={"X-User-Id": str(USER_ID)},
         )
         assert resp.status_code == 401
-        assert "inactive" in resp.json()["detail"].lower()
+        assert resp.json()["error"]["code"] == "AUTHLIB_AUTH_003"
+        assert "inactive" in resp.json()["error"]["detail"].lower()
 
     def test_suspended_user_returns_403(self):
         ctx = MOCK_AUTH_CONTEXT.model_copy(
@@ -169,7 +179,8 @@ class TestRequireAuth:
             headers={"X-User-Id": str(USER_ID)},
         )
         assert resp.status_code == 403
-        assert "suspended" in resp.json()["detail"].lower()
+        assert resp.json()["error"]["code"] == "AUTHLIB_AUTH_004"
+        assert "suspended" in resp.json()["error"]["detail"].lower()
 
 
 class TestRequirePermission:
@@ -190,7 +201,10 @@ class TestRequirePermission:
             headers={"X-User-Id": str(USER_ID)},
         )
         assert resp.status_code == 403
-        assert "user:delete" in resp.json()["detail"]
+        # The reason is machine-identifiable by code now; the permission name
+        # stays in detail so an operator reading a log still sees which one.
+        assert resp.json()["error"]["code"] == "AUTHLIB_AUTH_005"
+        assert "user:delete" in resp.json()["error"]["detail"]
 
 
 class TestRequireRoleIsGone:

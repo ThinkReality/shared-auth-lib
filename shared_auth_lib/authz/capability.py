@@ -40,7 +40,10 @@ def require_capability(
         auth_context: AuthContext = Depends(require_auth),
     ) -> AuthContext:
         if not can(auth_context, permission):
-            raise AuthorizationError(detail=f"Capability required: {permission}")
+            raise AuthorizationError(
+                detail=f"Capability required: {permission}",
+                code="AUTHLIB_AUTH_007",
+            )
         return auth_context
 
     return _checker

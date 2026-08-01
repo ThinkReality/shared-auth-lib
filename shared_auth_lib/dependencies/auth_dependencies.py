@@ -4,7 +4,8 @@ from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request
+from tr_shared.exceptions import AuthenticationError, AuthorizationError
 
 from shared_auth_lib.constants.roles import SystemRole
 from shared_auth_lib.exceptions import AuthContextNotFoundError
@@ -143,9 +144,9 @@ async def require_auth(
                 "correlation_id": identity.correlation_id,
             },
         )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+        raise AuthenticationError(
             detail="Authentication required",
+            code="AUTHLIB_AUTH_001",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -166,9 +167,9 @@ async def require_auth(
                 "correlation_id": identity.correlation_id,
             },
         )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+        raise AuthenticationError(
             detail="Invalid or expired authentication",
+            code="AUTHLIB_AUTH_002",
         )
 
     if not auth_context.is_active:
@@ -183,9 +184,9 @@ async def require_auth(
                 "path": request.url.path,
             },
         )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+        raise AuthenticationError(
             detail="User account is inactive",
+            code="AUTHLIB_AUTH_003",
         )
 
     if auth_context.is_suspended:
@@ -200,9 +201,9 @@ async def require_auth(
                 "path": request.url.path,
             },
         )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+        raise AuthorizationError(
             detail="User account is suspended",
+            code="AUTHLIB_AUTH_004",
         )
 
     auth_context = auth_context.model_copy(
@@ -232,9 +233,9 @@ def require_permission(
                     "permissions_count": len(auth_context.permissions),
                 },
             )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise AuthorizationError(
                 detail=f"Permission required: {permission}",
+                code="AUTHLIB_AUTH_005",
             )
         return auth_context
 
@@ -274,9 +275,9 @@ def require_any_role(
         auth_context: AuthContext = Depends(require_auth),
     ) -> AuthContext:
         if not auth_context.has_any_role(roles):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+            raise AuthorizationError(
                 detail=(f"One of roles required: {', '.join(roles)}"),
+                code="AUTHLIB_AUTH_006",
             )
         return auth_context
 

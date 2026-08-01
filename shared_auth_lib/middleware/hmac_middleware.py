@@ -8,11 +8,30 @@ from starlette.responses import Response
 from starlette.types import ASGIApp
 
 from tr_shared.contracts.headers import HttpHeader
+from tr_shared.schemas import build_error_envelope
 
 from shared_auth_lib.logging import get_logger
 from shared_auth_lib.services.hmac_verifier import verify_signature
 
 logger = get_logger(__name__)
+
+
+def _rejected(request: Request, message: str, code: str) -> JSONResponse:
+    """A 403 in the canonical envelope.
+
+    Middleware runs outside the exception-handler chain, so it cannot raise a
+    typed exception and must build the body itself — but it must build the same
+    body. Hand-rolled dicts here are how three HMAC rejections came to omit
+    ``correlation_id`` and carry unprefixed codes.
+    """
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content=build_error_envelope(
+            message=message,
+            code=code,
+            correlation_id=request.headers.get(HttpHeader.CORRELATION_ID.value),
+        ),
+    )
 
 DEFAULT_SKIP_PATHS: list[str] = [
     "/api/v1/health",
@@ -146,14 +165,10 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
                     "result": "failure_missing_headers",
                 },
             )
-            return JSONResponse(
-                status_code=status.HTTP_403_FORBIDDEN,
-                content={
-                    "error": {
-                        "message": "Missing gateway signature headers",
-                        "code": "HMAC_MISSING_HEADERS",
-                    }
-                },
+            return _rejected(
+                request,
+                "Missing gateway signature headers",
+                "AUTHLIB_AUTH_008",
             )
 
         headers_dict = dict(request.headers)
@@ -180,14 +195,10 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
                     "result": "failure_invalid_signature",
                 },
             )
-            return JSONResponse(
-                status_code=status.HTTP_403_FORBIDDEN,
-                content={
-                    "error": {
-                        "message": "Invalid gateway signature",
-                        "code": "HMAC_INVALID_SIGNATURE",
-                    }
-                },
+            return _rejected(
+                request,
+                "Invalid gateway signature",
+                "AUTHLIB_AUTH_009",
             )
 
         if self._redis is not None and await self._is_replay(
@@ -205,14 +216,10 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
                     "result": "failure_replay",
                 },
             )
-            return JSONResponse(
-                status_code=status.HTTP_403_FORBIDDEN,
-                content={
-                    "error": {
-                        "message": "Replayed gateway signature",
-                        "code": "HMAC_REPLAY",
-                    }
-                },
+            return _rejected(
+                request,
+                "Replayed gateway signature",
+                "AUTHLIB_AUTH_010",
             )
 
         self._hmac_success += 1
