@@ -33,6 +33,7 @@ def _rejected(request: Request, message: str, code: str) -> JSONResponse:
         ),
     )
 
+
 DEFAULT_SKIP_PATHS: list[str] = [
     "/api/v1/health",
     "/health",
