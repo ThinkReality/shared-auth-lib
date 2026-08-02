@@ -130,3 +130,16 @@ def test_tag_descriptions_declared_on_the_app_survive():
         app, title="t", version="1", skip_paths=SKIP
     )
     assert doc["tags"] == [{"name": "Leads", "description": "Lead lifecycle"}]
+
+
+def test_not_public_paths_name_the_credential_they_actually_need():
+    """They are gated by X-Service-Token, not by a bearer JWT or a gateway
+    signature. Publishing the gateway schemes on them names the wrong
+    credential — the narrower version of the lie this helper exists to fix."""
+    doc = schema(not_public=frozenset({"/api/v1/internal/"}))
+    assert security_for(doc, "/api/v1/internal/sync", "post") == [
+        {"ServiceToken": []}
+    ]
+    assert doc["components"]["securitySchemes"]["ServiceToken"]["name"] == (
+        "X-Service-Token"
+    )

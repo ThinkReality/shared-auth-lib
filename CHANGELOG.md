@@ -5,6 +5,15 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2026-08-02
+
+### Changed
+- `openapi_security_from_skip_paths` publishes `not_public` paths under a new
+  **`ServiceToken`** scheme (`X-Service-Token`) instead of the bearer + gateway
+  schemes. Those routes skip the gateway signature and are gated by a service
+  token at the route layer, so the previous output named a credential they never
+  use — the narrower form of the very defect this helper exists to fix.
+
 ## [0.21.1] - 2026-08-02
 
 ### Fixed

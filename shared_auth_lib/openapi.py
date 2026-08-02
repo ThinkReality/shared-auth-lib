@@ -57,12 +57,27 @@ _SCHEMES: dict[str, dict[str, Any]] = {
         "name": HttpHeader.GATEWAY_TIMESTAMP.value,
         "description": "ISO timestamp used by gateway HMAC verification.",
     },
+    "ServiceToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": HttpHeader.SERVICE_TOKEN.value,
+        "description": (
+            "Service-to-service shared secret. Callers reach these routes on "
+            "the service URL directly — the gateway strips this header from "
+            "every request it proxies."
+        ),
+    },
 }
 
 _CREDENTIALED: list[dict[str, list[str]]] = [
     {"BearerAuth": []},
     {"GatewaySignature": [], "GatewayTimestamp": []},
 ]
+
+# `not_public` routes skip the gateway signature and are gated by a service
+# token instead. Publishing the gateway schemes on them would name the wrong
+# credential — the narrower version of the same lie this helper exists to fix.
+_SERVICE_TOKEN_ONLY: list[dict[str, list[str]]] = [{"ServiceToken": []}]
 
 
 def openapi_security_from_skip_paths(
@@ -88,7 +103,9 @@ def openapi_security_from_skip_paths(
         not_public: Entries of `skip_paths` that skip HMAC but still require
             another credential at the route layer (an `X-Service-Token` S2S
             subtree). HMAC-exempt is not the same as open, and conflating them
-            is how an S2S surface comes to be documented as public.
+            is how an S2S surface comes to be documented as public. These paths
+            are published under `ServiceToken` — naming the credential they
+            actually need, not the gateway schemes they never see.
 
     Returns:
         The schema, also stored on `app.openapi_schema`. A second call returns
@@ -112,15 +129,21 @@ def openapi_security_from_skip_paths(
     )
 
     public = [p for p in skip_paths if p not in not_public]
+    reserved = list(not_public)
 
     schema.setdefault("components", {})["securitySchemes"] = dict(_SCHEMES)
 
     for path, operations in schema.get("paths", {}).items():
-        is_public = path_is_skipped(path, public)
+        if path_is_skipped(path, public):
+            security: list[dict[str, list[str]]] = []
+        elif reserved and path_is_skipped(path, reserved):
+            security = list(_SERVICE_TOKEN_ONLY)
+        else:
+            security = list(_CREDENTIALED)
         for name, spec in operations.items():
             if not isinstance(spec, dict) or name.lower() not in _METHODS:
                 continue
-            spec["security"] = [] if is_public else list(_CREDENTIALED)
+            spec["security"] = list(security)
 
     app.openapi_schema = schema
     return schema
