@@ -46,4 +46,5 @@ def require_capability(
             )
         return auth_context
 
+    setattr(_checker, "_required_permissions", (permission,))
     return _checker

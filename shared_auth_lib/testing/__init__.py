@@ -21,6 +21,14 @@ from shared_auth_lib.testing._gateway import (
     gateway_auth,
     signed_client,
 )
+from shared_auth_lib.testing.route_surfaces import (
+    FAMILIES,
+    RouteExemption,
+    SurfaceSpec,
+    assert_route_surfaces,
+    classify_route,
+    route_surface_report,
+)
 
 __all__ = [
     "FakeAuthContextProvider",
@@ -28,4 +36,10 @@ __all__ = [
     "async_signed_client",
     "gateway_auth",
     "signed_client",
+    "FAMILIES",
+    "RouteExemption",
+    "SurfaceSpec",
+    "assert_route_surfaces",
+    "classify_route",
+    "route_surface_report",
 ]
