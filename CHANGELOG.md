@@ -5,6 +5,49 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2026-08-02
+
+Gateway contract wave (WG'). The fleet's request stack was assembled by hand at
+seven call sites and nothing checked the result. Two of the seven had it
+**exactly inverted**, invisibly: dev compose sets `AUTH_LIB_DEV_MODE_BYPASS=true`
+so nothing failed locally, and not one test in the fleet asserted middleware
+order.
+
+### Added
+- **`install_standard_middleware`** (`shared_auth_lib.middleware`) — the one
+  assembly order, with three `Slot`s (`OUTERMOST`, `BEFORE_HMAC`, `INNERMOST`)
+  for a service's own layers. Each slot is justified by exactly one real
+  service; there is deliberately no escape hatch.
+- **`openapi_security_from_skip_paths`** (`shared_auth_lib.openapi`) — the
+  `/docs` security view derived from the enforcement list via `path_is_skipped`.
+  Replaces four divergent variants, one of which stamped a blanket `BearerAuth`
+  on `/internal/*`, on site-key routes, and on health probes.
+
+### Behaviour changes on adoption — read before bumping a consumer
+- **`hmac_redis_client` is REQUIRED.** A default of `None` silently disables
+  replay protection, which is exactly how tr-people-finance and
+  tr-realty-data-hub shipped without it. Both gain replay protection when they
+  adopt. Signed requests carry a microsecond-precision timestamp, so each
+  produces a distinct signature and existing suites are unaffected.
+- **`setup_monitoring` must be called BEFORE the factory.** That places
+  `MetricsMiddleware` innermost, so its histogram measures route handling rather
+  than the whole stack. tr-realty-data-hub's latency semantics change.
+- **`LoggingMiddleware` always receives `service_name`.** It defaults to
+  `"unknown"`, and tr-content-platform and tr-realty-data-hub never passed it —
+  their logs were attributed to nobody. Their `service_name` field changes.
+- **The OpenAPI helper emits ONE model, not a superset of the old ones.**
+  tr-content-platform's schema changes: skipped paths gain an explicit
+  `security: []` (rather than an absent key) and the two gateway header schemes
+  appear. Reproducing both prior behaviours would have re-created the divergence
+  inside the shared function.
+
+### Fixed
+- `APIIdempotencyMiddleware` is now installed INSIDE HMAC. Outside it — where
+  tr-lead-management had it — it is a denial-of-service primitive: the Redis key
+  is claimed with `SET NX` before authentication and 4xx responses are cached for
+  24h, so an unsigned POST with a guessed `Idempotency-Key` poisons that key for
+  a day.
+
 ## [0.20.0] - 2026-08-02
 
 Authorization convergence (W2'). Two authorization systems existed here and

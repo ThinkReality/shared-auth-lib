@@ -40,6 +40,11 @@ from shared_auth_lib.models.auth_context import (
 from shared_auth_lib.services.auth_context_client import (
     AuthContextClient,
 )
+from shared_auth_lib.middleware.standard_stack import (
+    Slot,
+    install_standard_middleware,
+)
+from shared_auth_lib.openapi import openapi_security_from_skip_paths
 from shared_auth_lib.services.hmac_verifier import (
     compute_signature,
     verify_signature,
@@ -49,6 +54,7 @@ __version__ = version("shared-auth-lib")
 
 __all__ = [
     "SYSTEM_ROLES",
+    "Slot",
     "SystemRole",
     "AuthContext",
     "AuthContextClient",
@@ -68,6 +74,8 @@ __all__ = [
     "require_any_role",
     "require_auth",
     "require_capability",
+    "install_standard_middleware",
+    "openapi_security_from_skip_paths",
     "require_permission",
     "verify_signature",
 ]
