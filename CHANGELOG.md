@@ -5,6 +5,43 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2026-08-03
+
+### Added
+- `shared_auth_lib.testing.route_surfaces`: a fleet-wide test guard,
+  `assert_route_surfaces(app, spec, exemptions, minimum)`, that classifies every
+  mounted route into one of five disjoint auth families (`business`, `site_key`,
+  `public`, `s2s`, `webhook`) and fails on an unguarded route, a route on more
+  than one family, a gated route under an HMAC-skipped prefix (checked even
+  when the route is exempted — an exemption's `surfaces` claim is about family
+  membership only, never HMAC coverage), an exemption whose claimed surfaces no
+  longer match, a stale exemption, or two route objects producing the same
+  method+path label (a duplicate router mount, which would otherwise silently
+  drop one route's classification). Every route, finding and exemption key is
+  `"{METHOD} {path}"`, never a bare path — two methods on one path are two
+  independent routes and a path-only key would collapse them (last-registered
+  method silently wins) or let one exemption cover every method at a path;
+  websocket routes (no `methods` attribute) label as `"WS {path}"`. Recursive
+  dependency walk (bridge dependencies wrap `require_auth` one level down);
+  permission/role detection reads only the `_required_permissions` marker
+  attribute, set by `require_permission`/`require_any_role` (see below) and by
+  service-local gates using the same convention — no closure inspection, so a
+  dependency merely closing over a bare vocabulary string cannot be mistaken
+  for a gate. `webhook_prefixes` matching goes through `path_is_skipped`, the
+  fleet's one prefix-matching rule, not a second `str.startswith`.
+  `SurfaceSpec` asserts `public_paths ⊆ hmac_skip_paths` at construction. Also
+  exports `FAMILIES`, `RouteExemption`, `SurfaceSpec`, `classify_route`,
+  `route_surface_report` from `shared_auth_lib.testing`. Nothing in the fleet
+  consumes this yet — per-service wrappers land in a later task.
+
+### Changed
+- `require_permission` and `require_any_role` now set a `_required_permissions`
+  marker attribute on the dependency callable they return — additive metadata,
+  no request-path behavior change. This is the sole hook
+  `shared_auth_lib.testing.route_surfaces` reads to detect a permission/role
+  gate; it mirrors content-platform's service-local `has_permission`, which
+  already used the same attribute.
+
 ## [0.22.0] - 2026-08-02
 
 ### Changed

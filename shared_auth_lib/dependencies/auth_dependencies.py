@@ -216,7 +216,16 @@ async def require_auth(
 def require_permission(
     permission: str,
 ) -> Callable[..., Awaitable[AuthContext]]:
-    """Dependency factory: require a specific permission."""
+    """Dependency factory: require a specific permission.
+
+    Sets ``_required_permissions`` on the returned callable — the same
+    attribute convention content-platform's service-local ``has_permission``
+    already uses. The fleet's route-surface guard
+    (``shared_auth_lib.testing.route_surfaces``) reads only this attribute to
+    detect a permission/role gate; it does not inspect closure cells, so a
+    dependency that merely closes over a vocabulary string without setting
+    this attribute is never mistaken for an auth gate.
+    """
 
     async def _checker(
         auth_context: AuthContext = Depends(require_auth),
@@ -239,6 +248,7 @@ def require_permission(
             )
         return auth_context
 
+    setattr(_checker, "_required_permissions", (permission,))
     return _checker
 
 
@@ -267,7 +277,10 @@ def require_any_role(
 ) -> Callable[..., Awaitable[AuthContext]]:
     """Dependency factory: require any of the specified SystemRoles.
 
-    Each role is validated against ``SystemRole`` at construction time.
+    Each role is validated against ``SystemRole`` at construction time. Sets
+    ``_required_permissions`` on the returned callable — see
+    ``require_permission`` for why this is the sole hook the route-surface
+    guard reads.
     """
     roles = [_validate_role(r) for r in roles]
 
@@ -281,6 +294,7 @@ def require_any_role(
             )
         return auth_context
 
+    setattr(_checker, "_required_permissions", tuple(roles))
     return _checker
 
 
