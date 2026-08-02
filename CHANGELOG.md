@@ -5,6 +5,15 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.1] - 2026-08-02
+
+### Fixed
+- `openapi_security_from_skip_paths` now carries the app's `openapi_tags` into
+  the generated schema. It previously omitted them, which silently dropped every
+  tag description a service had declared on its `FastAPI(...)` call
+  (tr-lead-management declares seven). Read off the app rather than added as a
+  parameter — a caller cannot forget what it never has to pass.
+
 ## [0.21.0] - 2026-08-02
 
 Gateway contract wave (WG'). The fleet's request stack was assembled by hand at

@@ -99,11 +99,16 @@ def openapi_security_from_skip_paths(
     if cached:
         return cached  # type: ignore[no-any-return]
 
+    # Tags come off the app rather than a parameter. FastAPI's own builder
+    # passes `self.openapi_tags`, so a helper that omits them silently drops
+    # every tag description the service declared at construction — a caller
+    # cannot forget what it never has to remember.
     schema = get_openapi(
         title=title,
         version=version,
         description=description,
         routes=app.routes,
+        tags=getattr(app, "openapi_tags", None),
     )
 
     public = [p for p in skip_paths if p not in not_public]

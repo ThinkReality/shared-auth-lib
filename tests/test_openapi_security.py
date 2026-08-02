@@ -119,3 +119,14 @@ def test_repeat_calls_return_the_cached_schema():
 
 def test_description_is_carried_through():
     assert schema(description="hello")["info"]["description"] == "hello"
+
+
+def test_tag_descriptions_declared_on_the_app_survive():
+    """FastAPI's own builder passes `self.openapi_tags`. A helper that omits
+    them drops every tag description the service declared."""
+    app = build_app()
+    app.openapi_tags = [{"name": "Leads", "description": "Lead lifecycle"}]
+    doc = openapi_security_from_skip_paths(
+        app, title="t", version="1", skip_paths=SKIP
+    )
+    assert doc["tags"] == [{"name": "Leads", "description": "Lead lifecycle"}]
