@@ -146,8 +146,8 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(dld.DLD_OWNERS_READ, "Read DLD owner records"),
     _d(dld.DLD_OWNERS_CONTACT, "Read DLD owner contact details"),
     _d(dld.DLD_OWNERS_IDENTITY, "Read DLD owner identity details"),
-    # property (realty scraping area)
-    _d(scraping.PROPERTY_SCRAPING_CACHE_FLUSH, "Flush the property scraper cache"),
+    # scraping
+    _d(scraping.SCRAPING_CACHE_FLUSH, "Flush the property scraper cache"),
     # wam
     _d(
         wam.WAM_SESSION_MANAGE,
