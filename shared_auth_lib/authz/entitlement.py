@@ -60,6 +60,7 @@ def require_module(module: Feature) -> Callable[..., Awaitable[AuthContext]]:
             _audit_logger.warning(
                 "module_not_entitled",
                 extra={
+                    "audit_event": "authz_failure",
                     "module": module.value,
                     "tenant_id": str(auth_context.tenant_id),
                     "user_id": str(auth_context.user_id),
