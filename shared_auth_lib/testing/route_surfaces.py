@@ -556,9 +556,7 @@ def assert_module_gates(
     for route in _scannable_routes(app):
         label = _route_label(route)
         path = _normalize_prefix(route.path)
-        exempt = next(
-            (p for p in exempt_prefix_map if path.startswith(p)), None
-        )
+        exempt = next((p for p in exempt_prefix_map if path.startswith(p)), None)
         if exempt is not None:
             exempt_matched[exempt] += 1
             if require_auth in _flatten(route.dependant):
