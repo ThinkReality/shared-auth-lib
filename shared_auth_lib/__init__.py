@@ -8,8 +8,10 @@ from importlib.metadata import version
 
 from shared_auth_lib.authz import (
     can,
+    is_module_enabled,
     permission_granted,
     require_capability,
+    require_module,
 )
 from shared_auth_lib.constants import (
     SYSTEM_ROLES,
@@ -70,10 +72,12 @@ __all__ = [
     "get_auth_context_client",
     "init_auth_context_client",
     "reset_auth_context_client",
+    "is_module_enabled",
     "optional_auth",
     "require_any_role",
     "require_auth",
     "require_capability",
+    "require_module",
     "install_standard_middleware",
     "openapi_security_from_skip_paths",
     "require_permission",
