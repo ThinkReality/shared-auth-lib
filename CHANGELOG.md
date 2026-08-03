@@ -5,6 +5,21 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0] - 2026-08-03
+
+### Changed
+- Internal `tr-shared-lib` pin moved `v0.56.0` → `v0.57.0`, which removes the Layer 2
+  DB-monitoring pipeline (`PersistenceMiddleware`, the Redis request buffer, the
+  `monitoring` schema models, `monitoring/tasks/`, `PrometheusClient`) and the
+  `MONITORING_DB_URL` / `MONITORING_ENABLED` settings.
+
+  No shared-auth-lib code touched — this release exists so the pin moves in lockstep.
+  `uv` honours a git dependency's OWN `[tool.uv.sources]`, so a consumer pinning
+  tr-shared-lib `v0.57.0` while this library still pinned `v0.56.0` aborts the whole
+  resolution with `conflicting URLs for package tr-shared-lib`.
+
+  Suite green against the new pin: 273 passed.
+
 ## [0.23.0] - 2026-08-03
 
 ### Added
