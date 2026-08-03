@@ -96,3 +96,66 @@ def test_an_exempt_route_that_authenticates_fails_the_claim():
 def test_a_short_reason_is_rejected_at_construction():
     with pytest.raises(ValueError, match="must exceed"):
         ModuleExemption(reason="s2s")
+
+
+def _app_with_sibling_prefix():
+    app = FastAPI()
+    router = APIRouter()
+
+    @router.get("/jobs")
+    async def _jobs() -> dict:
+        return {}
+
+    # Mounted at "/api/v1/sync-jobs", a STRING sibling of the stale gate prefix
+    # "/api/v1/sync" below — not a subtree of it.
+    app.include_router(router, prefix="/api/v1/sync-jobs")
+    return app
+
+
+def test_a_stale_prefix_does_not_shadow_a_sibling_route():
+    """"/api/v1/sync" must not prefix-match "/api/v1/sync-jobs": that would let a
+    gate whose router was deleted still count a sibling's routes as matches, and
+    the "matched no route" alarm — the one thing that catches a stale gate —
+    would never fire."""
+    with pytest.raises(AssertionError, match="matched no route"):
+        assert_module_gates(_app_with_sibling_prefix(), {"/api/v1/sync": Feature.DLD})
+
+
+async def _bridge_current_user(auth_context=Depends(require_auth)):
+    """The bridge pattern: `require_auth` sits one level BELOW this dependency,
+    exactly like every service's `get_current_user`."""
+    return auth_context
+
+
+def _app_with_nested_auth_under_exempt_prefix():
+    app = FastAPI()
+    deps = [Depends(require_module(Feature.DLD))]
+    router = APIRouter(dependencies=deps)
+
+    @router.get("/reports")
+    async def _reports() -> dict:
+        return {}
+
+    app.include_router(router, prefix="/api/v1/dld")
+
+    internal = APIRouter()
+
+    @internal.post("/bulk")
+    async def _bulk(user=Depends(_bridge_current_user)) -> dict:
+        return {}
+
+    app.include_router(internal, prefix="/api/v1/dld/internal")
+    return app
+
+
+def test_an_exempt_route_that_authenticates_via_a_nested_dependency_fails_the_claim():
+    """The exempt-route auth check must walk the FULL dependency tree, not just
+    depth 1: a bridge dependency (`get_current_user`) puts `require_auth` one
+    level down, and a depth-1 check would let this authenticated route pass its
+    "no AuthContext" claim falsely."""
+    with pytest.raises(AssertionError, match="resolves an AuthContext"):
+        assert_module_gates(
+            _app_with_nested_auth_under_exempt_prefix(),
+            {"/api/v1/dld/": Feature.DLD},
+            exempt_prefixes={"/api/v1/dld/internal/": ModuleExemption(reason=_REASON)},
+        )

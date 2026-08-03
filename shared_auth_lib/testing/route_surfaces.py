@@ -456,11 +456,31 @@ class ModuleExemption:
             )
 
 
+def _normalize_prefix(prefix: str) -> str:
+    """The same idiom used for webhook prefixes at line ~286 (`path_is_skipped`'s
+    caller), applied here to close a shadowing hole: bare `str.startswith` lets
+    `"/api/v1/sync"` prefix-match every `"/api/v1/sync-jobs"` route, so a stale or
+    typo'd gate silently counts a sibling's routes as its own and the "matched no
+    route" alarm never fires. Trailing-slashing BOTH sides of every comparison
+    (gate vs. route path, exempt vs. route path, exempt vs. gate in the
+    `uncovered` check) turns prefix matching into subtree matching: a route sitting
+    at exactly the prefix root still matches, but a sibling with a shared string
+    prefix no longer does.
+    """
+    return prefix.rstrip("/") + "/"
+
+
 def _required_modules(route: Any) -> frozenset[Any]:
     """Every module named by a `require_module` gate in this route's chain.
 
-    Reuses `_flatten` — services gate at the router, so the marker sits above the
-    route in the dependency tree, and a depth-1 scan would miss every one of them.
+    FastAPI flattens router-level `dependencies=[...]` straight into
+    `route.dependant.dependencies` — the marker set by `require_module` is
+    already at depth 1, so a depth-1 scan finds it. `_flatten` is still used here
+    (its recursion is a superset, never wrong) purely for consistency with every
+    other marker reader in this file; it is NOT load-bearing for this particular
+    call. It IS load-bearing for the exemption's `require_auth` check below,
+    where services route through bridge dependencies (`get_current_user`
+    wrapping `Depends(require_auth)`) that put `require_auth` below depth 1.
     """
     found: set[Any] = set()
     for call in _flatten(route.dependant):
@@ -472,6 +492,7 @@ def assert_module_gates(
     app: Any,
     gates: Mapping[str, Any],
     exempt_prefixes: Mapping[str, ModuleExemption] | None = None,
+    minimum: int = 1,
 ) -> None:
     """Every route under a declared prefix carries that prefix's module gate.
 
@@ -484,32 +505,47 @@ def assert_module_gates(
     are not entitlement units, and a version of this that listed them would be an
     instance list pretending to be an invariant.
 
-    Four assertions, each of which exists because its absence makes another vacuous:
+    Five assertions, each of which exists because its absence makes another vacuous:
 
-      1. every gate prefix matched at least one route — a typo'd prefix asserts
-         nothing
-      2. every exempt prefix matched at least one route, and sits under some gate
+      0. at least ``minimum`` gate prefixes were declared — an accidentally-emptied
+         ``gates`` map (``{}``) would otherwise pass with zero coverage
+      1. every remaining route under a gate prefix carries that module's marker
+      2. every exempt route's claim holds: no ``require_auth`` anywhere in its
+         dependency chain, not just at depth 1
+      3. every gate prefix matched at least one route — a typo'd or stale prefix
+         asserts nothing
+      4. every exempt prefix matched at least one route, and sits under some gate
          prefix — an exemption for a subtree no gate reaches asserts nothing either
-      3. every exempt route's claim holds: no ``require_auth`` in its chain
-      4. every remaining route under a gate prefix carries that module's marker
 
-    Prefix matching is a plain ``str.startswith`` on the declared prefixes, which
-    is why every prefix in this plan is written out in full. It deliberately does
-    NOT derive prefixes from ``HMAC_SKIP_PATHS``: that list contains ``"/"``, and
-    ``"/".rstrip("/") == ""`` makes ``startswith("")`` true for every path in the
-    service — one line that silently exempts everything and turns this whole guard
-    green with zero coverage.
+    Concrete per-route findings (1, 2) are asserted before the vacuity checks
+    (3, 4) — a single ungated route should report itself, not "your gate map
+    proves nothing", exactly as the sibling ``assert_route_surfaces`` orders its
+    own concrete findings ahead of its inert-registry check.
+
+    Both sides of every prefix comparison are trailing-slash-normalised via
+    ``_normalize_prefix`` before matching — see that function's docstring for why
+    a bare ``str.startswith`` is a shadowing hole, not a simplification.
     """
     exempt_prefixes = exempt_prefixes or {}
+    assert len(gates) >= minimum, (
+        f"only {len(gates)} gate prefix(es) declared, expected at least {minimum}. "
+        "An accidentally-emptied gates map asserts nothing."
+    )
+
+    gate_prefixes = {_normalize_prefix(p): module for p, module in gates.items()}
+    exempt_prefix_map = {
+        _normalize_prefix(p): exemption for p, exemption in exempt_prefixes.items()
+    }
+
     ungated: list[str] = []
     authenticated_exempt: list[str] = []
-    matched: dict[str, int] = {prefix: 0 for prefix in gates}
-    exempt_matched: dict[str, int] = {prefix: 0 for prefix in exempt_prefixes}
+    matched: dict[str, int] = {prefix: 0 for prefix in gate_prefixes}
+    exempt_matched: dict[str, int] = {prefix: 0 for prefix in exempt_prefix_map}
 
     uncovered = sorted(
         ex
-        for ex in exempt_prefixes
-        if not any(ex.startswith(gate) for gate in gates)
+        for ex in exempt_prefix_map
+        if not any(ex.startswith(gate) for gate in gate_prefixes)
     )
     assert not uncovered, (
         f"exempt prefixes not covered by any gate prefix: {uncovered}. An exemption "
@@ -519,8 +555,9 @@ def assert_module_gates(
 
     for route in _scannable_routes(app):
         label = _route_label(route)
+        path = _normalize_prefix(route.path)
         exempt = next(
-            (p for p in exempt_prefixes if route.path.startswith(p)), None
+            (p for p in exempt_prefix_map if path.startswith(p)), None
         )
         if exempt is not None:
             exempt_matched[exempt] += 1
@@ -528,24 +565,23 @@ def assert_module_gates(
                 authenticated_exempt.append(f"{label} (exempt prefix {exempt})")
             continue
 
-        for prefix, module in gates.items():
-            if not route.path.startswith(prefix):
+        # No first-match-wins here, unlike the exempt lookup above: a route can
+        # sit under more than one gate prefix (nested modules), and each gate it
+        # sits under imposes its own module requirement — every matching prefix
+        # is checked, not just the first.
+        for prefix, module in gate_prefixes.items():
+            if not path.startswith(prefix):
                 continue
             matched[prefix] += 1
             if module not in _required_modules(route):
                 ungated.append(f"{label}: missing require_module({module.value})")
 
-    empty = sorted(p for p, n in matched.items() if n == 0)
-    assert not empty, (
-        f"module-gate prefixes matched no route: {empty}. A prefix that matches "
-        "nothing asserts nothing — fix the prefix or drop the entry."
-    )
-
-    empty_exempt = sorted(p for p, n in exempt_matched.items() if n == 0)
-    assert not empty_exempt, (
-        f"exempt prefixes matched no route: {empty_exempt}. Delete them — an "
-        "exemption that matches nothing is either a typo or a hole waiting for a "
-        "future route to reuse the path."
+    assert not ungated, (
+        "Routes under an entitlement-owned prefix with no module gate:\n"
+        + "\n".join(sorted(ungated))
+        + "\n\nAdd Depends(require_module(Feature.X)) to the router that owns the "
+        "prefix — not to individual handlers. A gate declared in two places can be "
+        "deleted from one with nothing failing."
     )
 
     assert not authenticated_exempt, (
@@ -558,10 +594,15 @@ def assert_module_gates(
         "lost its gate."
     )
 
-    assert not ungated, (
-        "Routes under an entitlement-owned prefix with no module gate:\n"
-        + "\n".join(sorted(ungated))
-        + "\n\nAdd Depends(require_module(Feature.X)) to the router that owns the "
-        "prefix — not to individual handlers. A gate declared in two places can be "
-        "deleted from one with nothing failing."
+    empty = sorted(p for p, n in matched.items() if n == 0)
+    assert not empty, (
+        f"module-gate prefixes matched no route: {empty}. A prefix that matches "
+        "nothing asserts nothing — fix the prefix or drop the entry."
+    )
+
+    empty_exempt = sorted(p for p, n in exempt_matched.items() if n == 0)
+    assert not empty_exempt, (
+        f"exempt prefixes matched no route: {empty_exempt}. Delete them — an "
+        "exemption that matches nothing is either a typo or a hole waiting for a "
+        "future route to reuse the path."
     )
