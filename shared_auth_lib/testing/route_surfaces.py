@@ -115,8 +115,10 @@ from shared_auth_lib.permissions._registry import permission_names
 
 __all__ = [
     "FAMILIES",
+    "ModuleExemption",
     "RouteExemption",
     "SurfaceSpec",
+    "assert_module_gates",
     "assert_route_surfaces",
     "classify_route",
     "route_surface_report",
@@ -418,4 +420,148 @@ def assert_route_surfaces(
         f"Exemptions for routes that are no longer mounted: {stale}. Delete them — an "
         "exemption that outlives its route is a permanent hole waiting for a future "
         "route to reuse the path."
+    )
+
+
+@dataclass(frozen=True)
+class ModuleExemption:
+    """A path subtree the entitlement gate does not reach, plus its justification.
+
+    Keys a PREFIX, never a route label. "The site-key tier under
+    ``/api/v1/listing/public`` is not an entitlement surface" is a rule that covers
+    the route added there tomorrow; a list of today's route labels is an inventory
+    that silently stops covering anything.
+
+    The claim it makes is FIXED and re-verified on every run: **no route under this
+    prefix resolves an AuthContext.** There is no settable ``authenticated`` flag —
+    a claim the caller can dial is a mute button, and the one thing an exemption
+    must never do is quietly cover an authenticated business route that lost its
+    module gate.
+
+    That claim is the honest form of the enforcement boundary. Entitlement is an
+    authenticated-API gate. It is NOT that ingest paths have no tenant: lead
+    management resolves a tenant from ``X-Site-Key`` on its public forms and from
+    ``_resolve_tenant`` on its portal webhooks. It is that those paths are out of
+    scope by decision — see the plan's Architecture section.
+    """
+
+    reason: str
+
+    def __post_init__(self) -> None:
+        if len(self.reason) <= _MIN_REASON_LENGTH:
+            raise ValueError(
+                f"exemption reason must exceed {_MIN_REASON_LENGTH} chars — state "
+                "which auth surface this subtree is on and why an entitlement gate "
+                "does not belong there"
+            )
+
+
+def _required_modules(route: Any) -> frozenset[Any]:
+    """Every module named by a `require_module` gate in this route's chain.
+
+    Reuses `_flatten` — services gate at the router, so the marker sits above the
+    route in the dependency tree, and a depth-1 scan would miss every one of them.
+    """
+    found: set[Any] = set()
+    for call in _flatten(route.dependant):
+        found.update(getattr(call, "_required_modules", ()) or ())
+    return frozenset(found)
+
+
+def assert_module_gates(
+    app: Any,
+    gates: Mapping[str, Any],
+    exempt_prefixes: Mapping[str, ModuleExemption] | None = None,
+) -> None:
+    """Every route under a declared prefix carries that prefix's module gate.
+
+    ``gates`` maps a path prefix to the ``Feature`` that owns it. This encodes a
+    RULE — a prefix owns a module — not an inventory of today's routes, so a route
+    added under the prefix tomorrow is covered with no edit here.
+
+    There is deliberately NO fleet-wide "every business route needs a gate"
+    assertion: most business routers (auth, admin, activity, notification, task)
+    are not entitlement units, and a version of this that listed them would be an
+    instance list pretending to be an invariant.
+
+    Four assertions, each of which exists because its absence makes another vacuous:
+
+      1. every gate prefix matched at least one route — a typo'd prefix asserts
+         nothing
+      2. every exempt prefix matched at least one route, and sits under some gate
+         prefix — an exemption for a subtree no gate reaches asserts nothing either
+      3. every exempt route's claim holds: no ``require_auth`` in its chain
+      4. every remaining route under a gate prefix carries that module's marker
+
+    Prefix matching is a plain ``str.startswith`` on the declared prefixes, which
+    is why every prefix in this plan is written out in full. It deliberately does
+    NOT derive prefixes from ``HMAC_SKIP_PATHS``: that list contains ``"/"``, and
+    ``"/".rstrip("/") == ""`` makes ``startswith("")`` true for every path in the
+    service — one line that silently exempts everything and turns this whole guard
+    green with zero coverage.
+    """
+    exempt_prefixes = exempt_prefixes or {}
+    ungated: list[str] = []
+    authenticated_exempt: list[str] = []
+    matched: dict[str, int] = {prefix: 0 for prefix in gates}
+    exempt_matched: dict[str, int] = {prefix: 0 for prefix in exempt_prefixes}
+
+    uncovered = sorted(
+        ex
+        for ex in exempt_prefixes
+        if not any(ex.startswith(gate) for gate in gates)
+    )
+    assert not uncovered, (
+        f"exempt prefixes not covered by any gate prefix: {uncovered}. An exemption "
+        "for a subtree no gate reaches excuses nothing and hides a typo — drop it, "
+        "or fix the prefix so it sits under the gate it is excusing."
+    )
+
+    for route in _scannable_routes(app):
+        label = _route_label(route)
+        exempt = next(
+            (p for p in exempt_prefixes if route.path.startswith(p)), None
+        )
+        if exempt is not None:
+            exempt_matched[exempt] += 1
+            if require_auth in _flatten(route.dependant):
+                authenticated_exempt.append(f"{label} (exempt prefix {exempt})")
+            continue
+
+        for prefix, module in gates.items():
+            if not route.path.startswith(prefix):
+                continue
+            matched[prefix] += 1
+            if module not in _required_modules(route):
+                ungated.append(f"{label}: missing require_module({module.value})")
+
+    empty = sorted(p for p, n in matched.items() if n == 0)
+    assert not empty, (
+        f"module-gate prefixes matched no route: {empty}. A prefix that matches "
+        "nothing asserts nothing — fix the prefix or drop the entry."
+    )
+
+    empty_exempt = sorted(p for p, n in exempt_matched.items() if n == 0)
+    assert not empty_exempt, (
+        f"exempt prefixes matched no route: {empty_exempt}. Delete them — an "
+        "exemption that matches nothing is either a typo or a hole waiting for a "
+        "future route to reuse the path."
+    )
+
+    assert not authenticated_exempt, (
+        "Exempt prefix resolves an AuthContext on these routes:\n"
+        + "\n".join(sorted(authenticated_exempt))
+        + "\n\nThe exemption claims this subtree is not an authenticated surface, "
+        "and it is. Either the route belongs under the gated router (add "
+        "require_module), or the exemption is wrong. Entitlement gates every "
+        "authenticated business route — there is no opt-out for one that simply "
+        "lost its gate."
+    )
+
+    assert not ungated, (
+        "Routes under an entitlement-owned prefix with no module gate:\n"
+        + "\n".join(sorted(ungated))
+        + "\n\nAdd Depends(require_module(Feature.X)) to the router that owns the "
+        "prefix — not to individual handlers. A gate declared in two places can be "
+        "deleted from one with nothing failing."
     )

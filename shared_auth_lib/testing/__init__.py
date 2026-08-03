@@ -23,8 +23,10 @@ from shared_auth_lib.testing._gateway import (
 )
 from shared_auth_lib.testing.route_surfaces import (
     FAMILIES,
+    ModuleExemption,
     RouteExemption,
     SurfaceSpec,
+    assert_module_gates,
     assert_route_surfaces,
     classify_route,
     route_surface_report,
@@ -37,8 +39,10 @@ __all__ = [
     "gateway_auth",
     "signed_client",
     "FAMILIES",
+    "ModuleExemption",
     "RouteExemption",
     "SurfaceSpec",
+    "assert_module_gates",
     "assert_route_surfaces",
     "classify_route",
     "route_surface_report",
