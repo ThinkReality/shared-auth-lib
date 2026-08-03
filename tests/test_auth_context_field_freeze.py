@@ -1,16 +1,19 @@
 # tests/test_auth_context_field_freeze.py
 from shared_auth_lib.models.auth_context import AuthContext
 
-# The 12 frozen wire fields as of 2026-07-26. Do NOT change this set until the
-# node-centric RBAC overhaul (doc 5) is scheduled — it is a coordinated hard-cut
-# across gateway + lib + all services.
+# The 13 frozen wire fields as of 2026-08-03. Do NOT REMOVE OR RENAME any entry
+# in this set until the node-centric RBAC overhaul (doc 5) is scheduled — that is
+# a coordinated hard-cut across gateway + lib + all services.
 #
-# `role_hierarchy` was dropped in v0.16.0 (was 13 fields). It existed solely to
-# feed `AuthContext.has_role`, which widened cross-tenant scope gates via
-# inherited roles; both were removed. Dropping it needed no coordinated rollout:
-# AuthContext uses Pydantic's default `extra="ignore"`, so a producer still
-# sending the field is tolerated, and a consumer on an older lib falls back to
-# the field's default — compatible in both directions, in any deploy order.
+# ADDING a field is not that cut, and this set has now been amended twice on that
+# basis. `role_hierarchy` was dropped in v0.16.0 (13 -> 12) and `enabled_modules`
+# added in v0.26.0 (12 -> 13). Both were safe for the same reason: AuthContext
+# uses Pydantic's default `extra="ignore"`, so a producer sending a field the
+# consumer does not know is tolerated, and a consumer on an older lib falls back
+# to the field's default — compatible in both directions, in any deploy order.
+#
+# The rule this set enforces is therefore: removals and renames need a scheduled
+# coordinated cut; additions need a deliberate amendment here, like this one.
 FROZEN_FIELDS = {
     "external_auth_id",
     "user_id",
@@ -24,6 +27,7 @@ FROZEN_FIELDS = {
     "is_suspended",
     "correlation_id",
     "auth_provider",
+    "enabled_modules",
 }
 
 

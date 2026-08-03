@@ -43,6 +43,8 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
+from tr_shared.contracts import ENTITLEMENT_MODULES
+
 if TYPE_CHECKING:  # pragma: no cover - typing only
     import httpx
 
@@ -70,6 +72,9 @@ class Persona:
     email: str = "test-user@example.com"
     roles: tuple[str, ...] = ("admin",)
     permissions: tuple[str, ...] = ()
+    enabled_modules: tuple[str, ...] = field(
+        default_factory=lambda: tuple(sorted(m.value for m in ENTITLEMENT_MODULES))
+    )
     site_id: UUID | None = None
     is_active: bool = True
     is_suspended: bool = False
@@ -142,6 +147,7 @@ class FakeAuthContextProvider:
             tenant_id=persona.tenant_id,
             roles=list(persona.roles),
             permissions=list(persona.permissions),
+            enabled_modules=list(persona.enabled_modules),
             is_active=persona.is_active,
             is_suspended=persona.is_suspended,
             correlation_id=correlation_id or persona.correlation_id,
