@@ -57,7 +57,7 @@ def test_registry_covers_key_scopes():
         "dld:owners:read",
         "dld:owners:contact",
         "dld:owners:identity",
-        "property:scraping_cache:flush",
+        "scraping:cache:flush",
         "finance:expenses:read",
         "hr:attendance_read",
         "recruitment:posting:create",

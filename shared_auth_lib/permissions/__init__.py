@@ -102,7 +102,7 @@ from shared_auth_lib.permissions.media import (
     MEDIA_VIEW,
 )
 from shared_auth_lib.permissions.scraping import (
-    PROPERTY_SCRAPING_CACHE_FLUSH,
+    SCRAPING_CACHE_FLUSH,
 )
 from shared_auth_lib.permissions.lms import (
     LMS_AGENT_VIEW_STATS,
@@ -163,8 +163,8 @@ __all__ = [
     "DLD_OWNERS_IDENTITY",
     "DLD_OWNERS_READ",
     "DLD_SYNC_MANAGE",
-    # property (realty scraping area)
-    "PROPERTY_SCRAPING_CACHE_FLUSH",
+    # scraping
+    "SCRAPING_CACHE_FLUSH",
     # finance
     "FINANCE_ADMIN",
     "FINANCE_EXPENSES_APPROVE",

@@ -5,6 +5,30 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2026-08-03
+
+### Added
+- `AuthContext.enabled_modules: list[str]` — the tenant's entitlement, default `[]`
+  (fail-closed). The field freeze is amended, not bypassed: additions are
+  deploy-order-safe under `extra="ignore"`, removals and renames still need the
+  scheduled coordinated cut.
+- `authz.entitlement.is_module_enabled` / `require_module(Feature)` — the gate.
+  Raises `AuthorizationError` `AUTHLIB_AUTH_011`. Marks `_required_modules`, never
+  `_required_permissions`.
+- `AuthLibSettings.DEV_MODULES` + the `X-Dev-Modules` override header. The dev
+  bypass and the signed test client both grant all eight modules by default —
+  without this every dev request and every integration test 403s.
+- `testing.ModuleExemption` + `testing.assert_module_gates(app, {prefix: Feature},
+  exempt_prefixes={prefix: ModuleExemption(...)})`. An exempt prefix asserts that no
+  route under it resolves an `AuthContext`; the claim is re-verified on every run.
+
+### Changed
+- **BREAKING** `PROPERTY_SCRAPING_CACHE_FLUSH` → `SCRAPING_CACHE_FLUSH`, value
+  `property:scraping_cache:flush` → `scraping:cache:flush`. The `property` prefix
+  existed only because scraping had no `Feature` member; tr-shared-lib 0.59.0
+  added one. Consumers need the crm-core catalog migration `auth_0011`.
+- Internal `tr-shared-lib` pin → `v0.59.0`.
+
 ## [0.25.0] - 2026-08-03
 
 ### Changed

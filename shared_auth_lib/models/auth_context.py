@@ -34,11 +34,15 @@ class AuthContext(BaseModel):
     permissions: list[str] = Field(default_factory=list)
     is_active: bool = True
     is_suspended: bool = False
+    enabled_modules: list[str] = Field(
+        default_factory=list,
+        description="Tenant's enabled module names; see tr_shared ENTITLEMENT_MODULES",
+    )
 
     correlation_id: str | None = None
     auth_provider: str = "supabase"
 
-    @field_validator("roles", "permissions", mode="before")
+    @field_validator("roles", "permissions", "enabled_modules", mode="before")
     @classmethod
     def ensure_list(cls, v: Any) -> list:
         return v if isinstance(v, list) else []

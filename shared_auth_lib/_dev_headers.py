@@ -32,7 +32,7 @@ def build_dev_auth_context(
     """Return a dev AuthContext, honouring X-Dev-* headers when a Request is given.
 
     Precedence (highest to lowest):
-      1. X-Dev-* request headers (per-request override)
+      1. X-Dev-* request headers (per-request override), incl. X-Dev-Modules
       2. AUTH_LIB_DEV_* env vars (container-wide default)
       3. Hardcoded fallbacks (admin + wildcard permissions)
     """
@@ -45,6 +45,9 @@ def build_dev_auth_context(
     roles = _parse_csv(_hget(request, "x-dev-roles")) or list(settings.DEV_ROLES)
     permissions = _parse_csv(_hget(request, "x-dev-permissions")) or list(
         settings.DEV_PERMISSIONS
+    )
+    enabled_modules = _parse_csv(_hget(request, "x-dev-modules")) or list(
+        settings.DEV_MODULES
     )
     email = _hget(request, "x-dev-email") or settings.DEV_EMAIL
     first_name = _hget(request, "x-dev-first-name") or "Dev"
@@ -62,6 +65,7 @@ def build_dev_auth_context(
         last_name=last_name,
         roles=roles,
         permissions=permissions,
+        enabled_modules=enabled_modules,
         is_active=True,
         is_suspended=False,
         auth_provider="dev",

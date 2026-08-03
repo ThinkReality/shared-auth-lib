@@ -156,7 +156,7 @@ def test_dld_and_scraping_modules():
     assert dld.DLD_OWNERS_READ == "dld:owners:read"
     assert dld.DLD_OWNERS_CONTACT == "dld:owners:contact"
     assert dld.DLD_OWNERS_IDENTITY == "dld:owners:identity"
-    assert scraping.PROPERTY_SCRAPING_CACHE_FLUSH == "property:scraping_cache:flush"
+    assert scraping.SCRAPING_CACHE_FLUSH == "scraping:cache:flush"
     assert set(dld.__all__) == {
         "DLD_SYNC_MANAGE",
         "DLD_DATASETS_UPLOAD",
@@ -164,7 +164,7 @@ def test_dld_and_scraping_modules():
         "DLD_OWNERS_CONTACT",
         "DLD_OWNERS_IDENTITY",
     }
-    assert set(scraping.__all__) == {"PROPERTY_SCRAPING_CACHE_FLUSH"}
+    assert set(scraping.__all__) == {"SCRAPING_CACHE_FLUSH"}
 
 
 def test_package_root_exports_registry_and_new_constants():
@@ -178,7 +178,7 @@ def test_package_root_exports_registry_and_new_constants():
     assert pkg.ADMIN_WEBHOOK_REPLAY == "admin:webhook:replay"
     assert pkg.DLD_SYNC_MANAGE == "dld:sync:manage"
     assert pkg.DLD_OWNERS_READ == "dld:owners:read"
-    assert pkg.PROPERTY_SCRAPING_CACHE_FLUSH == "property:scraping_cache:flush"
+    assert pkg.SCRAPING_CACHE_FLUSH == "scraping:cache:flush"
 
 
 def test_package_all_has_no_duplicates():
@@ -228,3 +228,15 @@ def test_p4_new_constants_flat_exported():
     assert pkg.LEAD_DOCUMENT_DELETE == "lead:document_delete"
     assert pkg.LEAD_MINE_POOL_ADMIN_VIEW == "lead:mine_pool_admin_read"
     assert pkg.LISTING_METRICS_READ == "listing:metrics:read"
+
+
+def test_the_property_prefixed_scraping_name_is_gone():
+    """No alias, no shim. The `property` prefix existed only because scraping had
+    no Feature member; tr-shared-lib 0.59.0 added one. Two names for one concept
+    is the duplication this rename exists to end."""
+    from shared_auth_lib import permissions as pkg
+    from shared_auth_lib.permissions import scraping
+
+    assert not hasattr(scraping, "PROPERTY_SCRAPING_CACHE_FLUSH")
+    assert not hasattr(pkg, "PROPERTY_SCRAPING_CACHE_FLUSH")
+    assert "property:scraping_cache:flush" not in {p.name for p in pkg.ALL_PERMISSIONS}

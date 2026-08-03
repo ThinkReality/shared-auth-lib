@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from tr_shared.contracts import Environment
+from tr_shared.contracts import ENTITLEMENT_MODULES, Environment
 
 _DEV_UUID = UUID("00000000-0000-0000-0000-000000000001")
 
@@ -36,6 +36,10 @@ class AuthLibSettings(BaseSettings):
     DEV_TENANT_ID: UUID = Field(default=_DEV_UUID)
     DEV_ROLES: list[str] = Field(default=["admin"])
     DEV_PERMISSIONS: list[str] = Field(default=["*"])
+    DEV_MODULES: list[str] = Field(
+        default_factory=lambda: sorted(m.value for m in ENTITLEMENT_MODULES),
+        description="Modules the dev bypass grants when X-Dev-Modules is absent",
+    )
     DEV_EMAIL: str = "dev@thinkrealty.local"
 
     model_config = SettingsConfigDict(
