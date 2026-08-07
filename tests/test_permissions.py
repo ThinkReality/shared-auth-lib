@@ -97,6 +97,7 @@ def test_recruitment_granular_constants_importable_from_permissions_package():
         HR_RECRUITMENT_APPLICATION_UPDATE,
         HR_RECRUITMENT_POSTING_CREATE,
         HR_RECRUITMENT_POSTING_PUBLISH,
+        HR_RECRUITMENT_POSTING_READ,
         HR_RECRUITMENT_POSTING_UPDATE,
     )
 
@@ -105,6 +106,7 @@ def test_recruitment_granular_constants_importable_from_permissions_package():
     assert HR_RECRUITMENT_POSTING_CREATE == "recruitment:posting:create"
     assert HR_RECRUITMENT_POSTING_PUBLISH == "recruitment:posting:publish"
     assert HR_RECRUITMENT_POSTING_UPDATE == "recruitment:posting:update"
+    assert HR_RECRUITMENT_POSTING_READ == "recruitment:posting:read"
 
 
 def test_media_billing_usage_quota_constants_present():
@@ -199,7 +201,11 @@ def test_p4_new_constants_present():
     assert listing.LISTING_APPROVE == "listing:approve"
     assert "CMS_LANDING_PAGE_PUBLISH" in cms.__all__
     assert "CMS_BLOG_PUBLISH" in cms.__all__
-    for name in ("LEAD_NOTE_DELETE", "LEAD_DOCUMENT_DELETE", "LEAD_MINE_POOL_ADMIN_VIEW"):
+    for name in (
+        "LEAD_NOTE_DELETE",
+        "LEAD_DOCUMENT_DELETE",
+        "LEAD_MINE_POOL_ADMIN_VIEW",
+    ):
         assert name in lead.__all__
     assert "LISTING_METRICS_READ" in listing.__all__
     assert "LISTING_APPROVE" in listing.__all__
@@ -239,4 +245,48 @@ def test_the_property_prefixed_scraping_name_is_gone():
 
     assert not hasattr(scraping, "PROPERTY_SCRAPING_CACHE_FLUSH")
     assert not hasattr(pkg, "PROPERTY_SCRAPING_CACHE_FLUSH")
-    assert "property:scraping_cache:flush" not in {p.name for p in pkg.ALL_PERMISSIONS}
+    assert "property:scraping_cache:flush" not in {
+        p.name for p in pkg.ALL_PERMISSIONS
+    }
+
+
+def test_read_gates_exist_for_every_module_gated_feature():
+    """CMS, LMS and job postings must each have a read permission.
+
+    Without one, those features are reachable by any authenticated user of a
+    tenant that has the module enabled — the module answers "did this company
+    buy it", never "may this person see it". The CRM sidebar has no way to hide
+    a section under those terms without claiming an authority the API does not
+    enforce, so a read permission is what makes the two sides agree.
+
+    Named `read`, matching `admin:read` / `finance:read` / `listing:read` /
+    `lead:read`, rather than the `view` in PREFERRED_ACTIONS — every read gate
+    actually in the catalog uses `read`.
+    """
+    from shared_auth_lib.permissions import ALL_PERMISSIONS
+
+    catalog = {p.name for p in ALL_PERMISSIONS}
+
+    for name in ("cms:read", "lms:read", "recruitment:posting:read"):
+        assert name in catalog, f"{name} missing from ALL_PERMISSIONS"
+
+
+def test_new_read_permissions_are_seedable_with_resource_and_action():
+    """crm-core seeds `auth_permissions` from these fields — a bad split lands
+    a row the RBAC join cannot match."""
+    from shared_auth_lib.permissions import ALL_PERMISSIONS
+
+    by_name = {p.name: p for p in ALL_PERMISSIONS}
+
+    assert (by_name["cms:read"].resource, by_name["cms:read"].action) == (
+        "cms",
+        "read",
+    )
+    assert (by_name["lms:read"].resource, by_name["lms:read"].action) == (
+        "lms",
+        "read",
+    )
+    assert (
+        by_name["recruitment:posting:read"].resource,
+        by_name["recruitment:posting:read"].action,
+    ) == ("recruitment", "posting_read")

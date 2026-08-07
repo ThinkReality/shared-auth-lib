@@ -72,6 +72,7 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(admin.ADMIN_SITE_DELETE, "Remove a tenant website"),
     _d(admin.ADMIN_SITE_KEY_ROTATE, "Rotate a tenant website's API key"),
     # cms
+    _d(cms.CMS_READ, "Read CMS landing pages and blog posts"),
     _d(cms.CMS_LANDING_PAGE_PUBLISH, "Publish/approve/reject landing pages"),
     _d(cms.CMS_BLOG_PUBLISH, "Publish/unpublish/delete blog posts"),
     # media
@@ -115,6 +116,7 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(hr.HR_HIKCENTRAL_READ, "Read HikCentral data"),
     _d(hr.HR_RECRUITMENT_APPLICATION_READ, "Read job applications"),
     _d(hr.HR_RECRUITMENT_APPLICATION_UPDATE, "Update job applications"),
+    _d(hr.HR_RECRUITMENT_POSTING_READ, "Read job postings"),
     _d(hr.HR_RECRUITMENT_POSTING_CREATE, "Create job postings"),
     _d(hr.HR_RECRUITMENT_POSTING_PUBLISH, "Publish job postings"),
     _d(hr.HR_RECRUITMENT_POSTING_UPDATE, "Update job postings"),
@@ -130,6 +132,7 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(finance.FINANCE_INVOICES_SEND, "Send invoices"),
     _d(finance.FINANCE_ADMIN, "Finance administration"),
     # lms
+    _d(lms.LMS_READ, "Read LMS courses and learning content"),
     _d(lms.LMS_AGENT_VIEW_STATS, "View LMS agent stats"),
     _d(lms.LMS_ASSIGNMENT_CREATE, "Create LMS assignments"),
     _d(lms.LMS_QUIZ_PUBLISH, "Publish LMS quizzes"),

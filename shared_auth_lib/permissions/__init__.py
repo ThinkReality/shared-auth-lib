@@ -36,6 +36,7 @@ from shared_auth_lib.permissions.auth import (
 from shared_auth_lib.permissions.cms import (
     CMS_LANDING_PAGE_PUBLISH,
     CMS_BLOG_PUBLISH,
+    CMS_READ,
 )
 from shared_auth_lib.permissions.dld import (
     DLD_DATASETS_UPLOAD,
@@ -69,6 +70,7 @@ from shared_auth_lib.permissions.hr import (
     HR_RECRUITMENT_APPLICATION_READ,
     HR_RECRUITMENT_APPLICATION_UPDATE,
     HR_RECRUITMENT_POSTING_CREATE,
+    HR_RECRUITMENT_POSTING_READ,
     HR_RECRUITMENT_POSTING_PUBLISH,
     HR_RECRUITMENT_POSTING_UPDATE,
 )
@@ -106,6 +108,7 @@ from shared_auth_lib.permissions.scraping import (
 )
 from shared_auth_lib.permissions.lms import (
     LMS_AGENT_VIEW_STATS,
+    LMS_READ,
     LMS_ASSIGNMENT_CREATE,
     LMS_QUIZ_PUBLISH,
     LMS_QUIZ_VIEW_PROGRESS,
@@ -157,6 +160,7 @@ __all__ = [
     # cms
     "CMS_LANDING_PAGE_PUBLISH",
     "CMS_BLOG_PUBLISH",
+    "CMS_READ",
     # dld
     "DLD_DATASETS_UPLOAD",
     "DLD_OWNERS_CONTACT",
@@ -189,6 +193,7 @@ __all__ = [
     "HR_RECRUITMENT_APPLICATION_READ",
     "HR_RECRUITMENT_APPLICATION_UPDATE",
     "HR_RECRUITMENT_POSTING_CREATE",
+    "HR_RECRUITMENT_POSTING_READ",
     "HR_RECRUITMENT_POSTING_PUBLISH",
     "HR_RECRUITMENT_POSTING_UPDATE",
     # lead
@@ -219,6 +224,7 @@ __all__ = [
     "MEDIA_VIEW",
     # lms
     "LMS_AGENT_VIEW_STATS",
+    "LMS_READ",
     "LMS_ASSIGNMENT_CREATE",
     "LMS_QUIZ_PUBLISH",
     "LMS_QUIZ_VIEW_PROGRESS",

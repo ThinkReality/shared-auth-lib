@@ -4,10 +4,12 @@ Ports the content-platform cms landing-page authority that was previously a
 coarse admin role gate. `cms` is a Feature-spine member.
 """
 
+CMS_READ = "cms:read"
 CMS_LANDING_PAGE_PUBLISH = "cms:landing_page:publish"
 CMS_BLOG_PUBLISH = "cms:blog:publish"
 
 __all__ = [
+    "CMS_READ",
     "CMS_LANDING_PAGE_PUBLISH",
     "CMS_BLOG_PUBLISH",
 ]

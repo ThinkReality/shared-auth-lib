@@ -26,6 +26,7 @@ HR_HIKCENTRAL_READ = "hr:hikcentral_read"
 
 HR_RECRUITMENT_APPLICATION_READ = "recruitment:application:read"
 HR_RECRUITMENT_APPLICATION_UPDATE = "recruitment:application:update"
+HR_RECRUITMENT_POSTING_READ = "recruitment:posting:read"
 HR_RECRUITMENT_POSTING_CREATE = "recruitment:posting:create"
 HR_RECRUITMENT_POSTING_PUBLISH = "recruitment:posting:publish"
 HR_RECRUITMENT_POSTING_UPDATE = "recruitment:posting:update"
@@ -43,6 +44,7 @@ __all__ = [
     "HR_RECRUITMENT_APPLICATION_READ",
     "HR_RECRUITMENT_APPLICATION_UPDATE",
     "HR_RECRUITMENT_POSTING_CREATE",
+    "HR_RECRUITMENT_POSTING_READ",
     "HR_RECRUITMENT_POSTING_PUBLISH",
     "HR_RECRUITMENT_POSTING_UPDATE",
 ]
