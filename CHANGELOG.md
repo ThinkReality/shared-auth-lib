@@ -5,6 +5,13 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] - 2026-08-09
+
+### Added
+- `permissions.TASK_READ_ALL = "task:read_all"` — row-visibility bypass for
+  `GET /tasks` in tr-crm-core. Not a route gate: without it, a caller sees only
+  tasks they are `assigned_to`, `created_by`, `assigned_by`, or a co-assignee on.
+
 ## [0.26.0] - 2026-08-03
 
 ### Added
