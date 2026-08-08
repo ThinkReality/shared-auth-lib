@@ -143,6 +143,7 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(task.TASK_EDIT, "Edit tasks"),
     _d(task.TASK_DELETE, "Delete tasks"),
     _d(task.TASK_ASSIGN, "Assign tasks"),
+    _d(task.TASK_READ_ALL, "See every task in the tenant, not just your own"),
     # dld
     _d(dld.DLD_SYNC_MANAGE, "Manage DLD sync"),
     _d(dld.DLD_DATASETS_UPLOAD, "Upload DLD datasets"),

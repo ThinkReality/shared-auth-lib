@@ -118,6 +118,7 @@ from shared_auth_lib.permissions.task import (
     TASK_CREATE,
     TASK_DELETE,
     TASK_EDIT,
+    TASK_READ_ALL,
     TASK_VIEW,
 )
 from shared_auth_lib.permissions.wam import (
@@ -233,6 +234,7 @@ __all__ = [
     "TASK_CREATE",
     "TASK_DELETE",
     "TASK_EDIT",
+    "TASK_READ_ALL",
     "TASK_VIEW",
     # wam
     "WAM_BROADCAST_READ",

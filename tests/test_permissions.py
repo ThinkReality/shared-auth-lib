@@ -267,7 +267,12 @@ def test_read_gates_exist_for_every_module_gated_feature():
 
     catalog = {p.name for p in ALL_PERMISSIONS}
 
-    for name in ("cms:read", "lms:read", "recruitment:posting:read"):
+    for name in (
+        "cms:read",
+        "lms:read",
+        "recruitment:posting:read",
+        "task:read_all",
+    ):
         assert name in catalog, f"{name} missing from ALL_PERMISSIONS"
 
 
@@ -290,3 +295,7 @@ def test_new_read_permissions_are_seedable_with_resource_and_action():
         by_name["recruitment:posting:read"].resource,
         by_name["recruitment:posting:read"].action,
     ) == ("recruitment", "posting_read")
+    assert (by_name["task:read_all"].resource, by_name["task:read_all"].action) == (
+        "task",
+        "read_all",
+    )
