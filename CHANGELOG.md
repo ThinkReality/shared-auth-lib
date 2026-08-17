@@ -5,6 +5,15 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.1] - 2026-08-17
+
+### Fixed
+- Internal `tr-shared-lib` pin bumped to `v0.66.3` — carries the JSON-log
+  `exc_info=True` traceback fix (previously silently dropped in production
+  logs). No code change in this lib; pin-only release required because every
+  consumer pins both libs by tag and uv rejects a mismatched `tr-shared-lib`
+  pin between a consumer and its `shared-auth-lib` dependency.
+
 ## [0.29.0] - 2026-08-09
 
 ### Added
