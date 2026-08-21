@@ -5,6 +5,13 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.0] - 2026-08-21
+
+### Changed
+- Internal `tr-shared-lib` pin bumped to `v0.67.0` — carries the BREAKING change
+  that an unhandled event type is acked rather than dead-lettered, and removes
+  `EventConsumer.register_ignored()`. No shared-auth-lib code changes.
+
 ## [0.33.1] - 2026-08-17
 
 ### Fixed
