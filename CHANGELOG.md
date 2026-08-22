@@ -5,6 +5,17 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0] - 2026-08-22
+
+### Changed
+- Internal `tr-shared-lib` pin bumped to `v0.68.0` — adds the Supabase Vault
+  write path (`tr_shared.vault.VaultService`). Additive; nothing shared-auth-lib
+  uses changed, and there are no shared-auth-lib code changes. The bump exists
+  because every consumer pins this library by tag and uv honours a git
+  dependency's own `[tool.uv.sources]`: a consumer moving to `v0.68.0` while
+  this library still pinned `v0.67.0` aborts the resolve with
+  `conflicting URLs for package tr-shared-lib`.
+
 ## [0.34.0] - 2026-08-21
 
 ### Changed
