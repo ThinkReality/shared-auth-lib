@@ -5,6 +5,20 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.0] - 2026-08-24
+
+### Changed
+- Internal `tr-shared-lib` pin bumped to `v0.70.0` — promotes the `Emirate`
+  vocabulary to `tr_shared.contracts`. Additive; nothing shared-auth-lib uses
+  changed, and there are no shared-auth-lib code changes. The bump exists
+  because every consumer pins this library by tag and uv honours a git
+  dependency's own `[tool.uv.sources]`: a consumer moving to `v0.70.0` while
+  this library still pinned `v0.69.0` aborts the resolve with
+  `conflicting URLs for package tr-shared-lib`.
+
+> **Note:** `0.36.0` was released without a CHANGELOG entry. Left as-is rather
+> than reconstructed after the fact.
+
 ## [0.35.0] - 2026-08-22
 
 ### Changed
