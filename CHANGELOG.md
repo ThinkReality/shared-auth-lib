@@ -5,6 +5,16 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.2] - 2026-09-01
+
+### Changed
+- Internal `tr-shared-lib` pin bumped to `v0.72.0` — enables TCP keepalive on
+  the Celery broker connection. No shared-auth-lib code changes; this library
+  does not use Celery. The bump exists because uv honours a git dependency's
+  own `[tool.uv.sources]`, so a consumer moving to `v0.72.0` while this library
+  still pinned `v0.71.0` aborts with `conflicting URLs for package
+  tr-shared-lib`.
+
 ## [0.37.0] - 2026-08-24
 
 ### Changed
