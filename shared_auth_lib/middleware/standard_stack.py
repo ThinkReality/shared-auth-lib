@@ -98,6 +98,7 @@ def install_standard_middleware(
     cors: dict[str, Any] | None,
     slack_webhook_url: str | None = "",
     hmac_tolerance_seconds: int | None = None,
+    replay_protection_fail_open: bool | None = None,
     rate_limit: tuple[Any, Any] | None = None,
     idempotency_redis_url: str | None = None,
     extras: Sequence[tuple[Slot, type, dict[str, Any]]] = (),
@@ -127,6 +128,11 @@ def install_standard_middleware(
         slack_webhook_url: None is coerced to "" — callers pass a settings
             value that is optional on several services.
         hmac_tolerance_seconds: None leaves the library default in force.
+        replay_protection_fail_open: None leaves the library default in force.
+            `False` makes a request fail CLOSED when the replay-protection
+            Redis is unreachable, instead of being let through unchecked.
+            Not forwarded when None so the default has exactly one
+            declaration, on `GatewayHMACMiddleware.__init__`.
         rate_limit: `(limiter, config)`, or None for no rate limiting.
         idempotency_redis_url: Redis URL, or None for no idempotency layer.
         extras: `(slot, middleware_class, kwargs)`, applied in the order given
@@ -169,6 +175,8 @@ def install_standard_middleware(
     }
     if hmac_tolerance_seconds is not None:
         hmac_kwargs["tolerance_seconds"] = hmac_tolerance_seconds
+    if replay_protection_fail_open is not None:
+        hmac_kwargs["replay_protection_fail_open"] = replay_protection_fail_open
     add(GatewayHMACMiddleware, **hmac_kwargs)
 
     if rate_limit is not None:

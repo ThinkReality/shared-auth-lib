@@ -5,6 +5,26 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.38.0] - 2026-09-03
+
+### Added
+- `install_standard_middleware` now forwards `replay_protection_fail_open` to
+  `GatewayHMACMiddleware`. The parameter has always existed on the middleware's
+  `__init__`, but the factory dropped it — and since the factory is the mandated
+  entry point and no service constructs the middleware directly, the flag was
+  unreachable fleet-wide. Every service therefore ran fail-open: when the
+  replay-protection Redis is unreachable, `_is_replay` swallows the error and
+  the request is let through unchecked.
+- Omitting the argument leaves the library default (`True`) in force, so this
+  release changes no service's behaviour. It makes the posture selectable;
+  a service opts in by passing `False`.
+
+## [0.37.3] - 2026-09-03
+
+### Changed
+- Internal `tr-shared-lib` pin bumped to `v0.73.0`. Backfilled: this version was
+  tagged and released without a CHANGELOG entry.
+
 ## [0.37.2] - 2026-09-01
 
 ### Changed
