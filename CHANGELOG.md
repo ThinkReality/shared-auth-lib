@@ -5,6 +5,19 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.39.0] - 2026-09-04
+
+No code change. The internal `tr-shared-lib` pin moves to `v0.74.0`.
+
+`uv` honours a git dependency's OWN `[tool.uv.sources]`, so this pin must match
+what consumers pin or the relock aborts with `conflicting URLs for package
+tr-shared-lib`. Cutting a tr-shared-lib tag without also cutting one here is
+what produces that failure.
+
+### Changed
+- `tr-shared-lib` pinned to `v0.74.0` (adds `BedroomCount` and
+  `BaseAPIException(extra=...)`).
+
 ## [0.38.0] - 2026-09-03
 
 ### Added
