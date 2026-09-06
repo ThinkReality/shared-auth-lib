@@ -159,6 +159,7 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     ),
     _d(wam.WAM_BROADCAST_READ, "View WhatsApp broadcasts and their recipients"),
     _d(wam.WAM_BROADCAST_SEND, "Create and send WhatsApp broadcasts"),
+    _d(wam.WAM_CONVERSATION_READ, "View WhatsApp conversation threads and their messages"),
 )
 
 

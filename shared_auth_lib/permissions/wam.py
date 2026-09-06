@@ -13,8 +13,11 @@ WAM_SESSION_MANAGE = "wam:session:manage"
 WAM_BROADCAST_READ = "wam:broadcast:read"
 WAM_BROADCAST_SEND = "wam:broadcast:send"
 
+WAM_CONVERSATION_READ = "wam:conversation:read"
+
 __all__ = [
     "WAM_SESSION_MANAGE",
     "WAM_BROADCAST_READ",
     "WAM_BROADCAST_SEND",
+    "WAM_CONVERSATION_READ",
 ]

@@ -5,6 +5,15 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.40.0] - 2026-09-06
+
+### Added
+- `WAM_CONVERSATION_READ` permission (`wam:conversation:read`) — gates the new
+  WhatsApp conversation-preview read endpoints in tr-whatsApp-marketing-agent
+  (list a connection's leads, read one lead's message thread). Read-only,
+  separate from `WAM_SESSION_MANAGE`, matches the existing
+  `WAM_BROADCAST_READ` precedent.
+
 ## [0.39.0] - 2026-09-04
 
 No code change. The internal `tr-shared-lib` pin moves to `v0.74.0`.

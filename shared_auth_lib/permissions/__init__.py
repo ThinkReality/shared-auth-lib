@@ -124,6 +124,7 @@ from shared_auth_lib.permissions.task import (
 from shared_auth_lib.permissions.wam import (
     WAM_BROADCAST_READ,
     WAM_BROADCAST_SEND,
+    WAM_CONVERSATION_READ,
     WAM_SESSION_MANAGE,
 )
 
@@ -239,5 +240,6 @@ __all__ = [
     # wam
     "WAM_BROADCAST_READ",
     "WAM_BROADCAST_SEND",
+    "WAM_CONVERSATION_READ",
     "WAM_SESSION_MANAGE",
 ]
