@@ -5,6 +5,26 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.41.0] - 2026-09-07
+
+Pin-only. No shared-auth-lib code changed; the version moves so consumers have a tag
+to point at.
+
+### Changed
+- **`tr-shared-lib` pin `v0.74.0` -> `v0.75.0`.**
+
+  Required, not cosmetic. uv honours a git dependency's own `[tool.uv.sources]`, so a
+  consumer pinning `tr-shared-lib v0.75.0` while this library still pinned `v0.74.0`
+  aborts the resolve with `conflicting URLs for package tr-shared-lib`. The two pins
+  must move together, which is why this release exists at all.
+
+  What v0.75.0 brings: `BaseServiceSettings.validate_production_config` now rejects any
+  `CORS_ORIGINS` entry that is not `https://`, in production only. Nothing in
+  shared-auth-lib reads `CORS_ORIGINS`, so this library is unaffected at runtime — but
+  every consumer inherits the guard on relock. See tr-shared-lib CHANGELOG 0.75.0 for
+  the six services that must drop their `http://localhost:*` origins before a first
+  production cutover.
+
 ## [0.40.0] - 2026-09-06
 
 ### Added
