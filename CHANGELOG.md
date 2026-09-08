@@ -5,6 +5,29 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.42.0] - 2026-09-08
+
+### Added
+- **`AUTH_DIRECTORY_MERGE = "auth:directory:merge"`** — the one new permission the
+  Stage 2 tenant directory needs (S2).
+
+  The directory's other two routes reuse existing strings honestly: `GET /auth/directory`
+  is the User Management screen extended, so it takes `AUTH_USER_MANAGE`; inviting *is*
+  creating a user, so `POST /{id}/invite` takes `AUTH_USER_CREATE` — the same string
+  `resend-invite` is already gated on, for the same reason. Merging two identities is
+  neither. It is hard to undo and no existing string covers it, so it is minted rather
+  than borrowed.
+
+  Landed in three places, because a constant is not a permission until all three exist:
+  the module constant and its `__all__`, the package-root re-export every call site
+  imports from, and the `_registry.py` row — `ALL_PERMISSIONS` is what
+  `sync_permission_catalog` seeds `auth_permissions` from, so a constant without a
+  registry row never reaches a database.
+
+  **`tr-shared-lib` pin is unchanged at `v0.75.0`.** Deliberate: nothing here needs
+  new tr-shared-lib code, and leaving that pin still lets consumers relock without the
+  paired tag bump that a tr-shared-lib move would force.
+
 ## [0.41.0] - 2026-09-07
 
 Pin-only. No shared-auth-lib code changed; the version moves so consumers have a tag

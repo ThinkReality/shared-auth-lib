@@ -31,6 +31,7 @@ def test_registry_covers_key_scopes():
         "auth:role:assign",
         "auth:user:create",
         "auth:user:manage",  # bootstrap
+        "auth:directory:merge",
         "media:upload",
         "media:read",
         "media:update",

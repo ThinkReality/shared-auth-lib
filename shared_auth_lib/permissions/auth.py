@@ -13,6 +13,11 @@ AUTH_USER_CREATE = "auth:user:create"
 AUTH_USER_MANAGE = "auth:user:manage"
 AUTH_USER_SUSPEND = "auth:user:suspend"
 
+# Merging two directory identities is not "managing a user": it is hard to undo and
+# no existing string honestly covers it. The directory list reuses AUTH_USER_MANAGE and
+# invite reuses AUTH_USER_CREATE, so this is the only new string the directory needs.
+AUTH_DIRECTORY_MERGE = "auth:directory:merge"
+
 AUTH_ROLE_CREATE = "auth:role:create"
 AUTH_ROLE_ASSIGN = "auth:role:assign"
 
@@ -33,6 +38,7 @@ __all__ = [
     "AUTH_USER_CREATE",
     "AUTH_USER_MANAGE",
     "AUTH_USER_SUSPEND",
+    "AUTH_DIRECTORY_MERGE",
     "AUTH_ROLE_CREATE",
     "AUTH_ROLE_ASSIGN",
     "AUTH_CREDENTIAL_CREATE",
