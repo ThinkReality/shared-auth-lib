@@ -51,6 +51,7 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(auth.AUTH_USER_CREATE, "Create users"),
     _d(auth.AUTH_USER_MANAGE, "Manage users"),
     _d(auth.AUTH_USER_SUSPEND, "Suspend users"),
+    _d(auth.AUTH_DIRECTORY_MERGE, "Merge two directory identities into one person"),
     _d(auth.AUTH_ROLE_CREATE, "Create roles"),
     _d(auth.AUTH_ROLE_ASSIGN, "Assign roles to users"),
     _d(auth.AUTH_CREDENTIAL_CREATE, "Create credentials"),

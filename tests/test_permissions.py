@@ -133,6 +133,7 @@ def test_auth_module_constants_match_values():
         "AUTH_USER_CREATE": "auth:user:create",
         "AUTH_USER_MANAGE": "auth:user:manage",
         "AUTH_USER_SUSPEND": "auth:user:suspend",
+        "AUTH_DIRECTORY_MERGE": "auth:directory:merge",
         "AUTH_ROLE_CREATE": "auth:role:create",
         "AUTH_ROLE_ASSIGN": "auth:role:assign",
         "AUTH_CREDENTIAL_CREATE": "auth:credential:create",
@@ -181,6 +182,7 @@ def test_package_root_exports_registry_and_new_constants():
     assert pkg.DLD_SYNC_MANAGE == "dld:sync:manage"
     assert pkg.DLD_OWNERS_READ == "dld:owners:read"
     assert pkg.SCRAPING_CACHE_FLUSH == "scraping:cache:flush"
+    assert pkg.AUTH_DIRECTORY_MERGE == "auth:directory:merge"
 
 
 def test_package_all_has_no_duplicates():
@@ -299,3 +301,4 @@ def test_new_read_permissions_are_seedable_with_resource_and_action():
         "task",
         "read_all",
     )
+
