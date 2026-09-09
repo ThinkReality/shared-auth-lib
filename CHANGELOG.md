@@ -5,6 +5,32 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.43.0] - 2026-09-09
+
+Pin-only. No shared-auth-lib code changed; the version moves because a tr-shared-lib
+bump forces one.
+
+### Changed
+- **`tr-shared-lib` pin `v0.75.0` → `v0.76.0`**, which adds the
+  `listing_internal.apply_for_owner` S2S contract (Wave 0b of the listing-owner-mapping
+  Stage 2 plan).
+
+  This tag exists so consumers can relock at all. uv honours a git dependency's own
+  `[tool.uv.sources]`, so shared-auth-lib's internal tr-shared-lib pin must match what
+  consumers pin — a consumer moving to `v0.76.0` while this library still pinned
+  `v0.75.0` aborts with `conflicting URLs for package tr-shared-lib`. The pairing is a
+  requirement, not a convenience; the reverse direction is not symmetric, and 0.42.0
+  was released alone for exactly that reason.
+
+  Verified in this repository's own venv rather than from the lockfile: `uv sync
+  --reinstall-package tr-shared-lib` moved the installed dist 0.75.0 → 0.76.0 and
+  `listing_internal.apply_for_owner()` resolves. `--reinstall-package` is required —
+  a git tag resolves to a version string uv already considers installed, so a plain
+  `uv sync` is a no-op and leaves the venv on the old code while both `pyproject.toml`
+  and `uv.lock` claim the new one.
+
+  Suite unchanged at **304 passed**, identical to the pre-bump baseline.
+
 ## [0.42.0] - 2026-09-08
 
 ### Added
