@@ -5,6 +5,17 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.44.0] - 2026-09-11
+
+Pin-only. No shared-auth-lib code changed; the version moves because a tr-shared-lib
+bump forces one — uv honours this package's own `[tool.uv.sources]`, so a consumer
+pinning tr-shared-lib v0.77.0 while this pins v0.76.0 aborts with conflicting URLs.
+
+tr-shared-lib v0.77.0 removes six unused migration DDL helpers
+(`add_fk_deferred`, `CrossSchemaFKError`, `add_check_constraint_deferred`,
+`concurrent_index_context`, `dedup_with_table_lock`, `UNDELIVERED_EVENTS_COLUMNS`)
+and adds `PortalSlug.CALCOM`. shared-auth-lib imports none of the removed symbols.
+
 ## [0.43.0] - 2026-09-09
 
 Pin-only. No shared-auth-lib code changed; the version moves because a tr-shared-lib
