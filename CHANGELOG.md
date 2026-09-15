@@ -5,6 +5,17 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.45.0] - 2026-09-15
+
+Pin-only. tr-shared-lib v0.78.1 makes `create_async_engine_factory` keep a client-side
+connection pool by default (`AsyncAdaptedQueuePool` 2/8, pre-ping removed, engines
+disposed after Celery fork). shared-auth-lib builds no engine; no code here changes.
+
+v0.78.0 is skipped on purpose: it made `tr_shared.config` import SQLAlchemy, and this
+package pins `tr-shared-lib[http,logging]` without the `[db]` extra, so its test session
+died at collection (`tr_shared.testing` is a `pytest11` entry point). 0.78.1 moves the
+pool defaults to `tr_shared.contracts.db_pool`.
+
 ## [0.44.0] - 2026-09-11
 
 Pin-only. No shared-auth-lib code changed; the version moves because a tr-shared-lib
