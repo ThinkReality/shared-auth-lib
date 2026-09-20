@@ -5,6 +5,25 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.47.0] - 2026-09-20
+
+### Fixed
+
+- `AuthContextClient` deduplicates concurrent in-memory cache misses for the same
+  `external_auth_id` (singleflight, `_inflight`). A page load fans out ~6 parallel BFF
+  requests; on a cold worker every one of them made its own hop to crm-core
+  (`GET /internal/auth-context/{id}`, 650 ms–1.3 s each on staging). Now the first miss
+  fetches and the rest await that task. A failed leader propagates to every waiter and
+  caches nothing. Mirrors the singleflight crm-core's `AuthContextCacheService` already
+  has on its side. No public API change.
+
+### Added
+
+- `testing.Persona.first_name` / `last_name` (default `None`), threaded through
+  `FakeAuthContextProvider` into the `AuthContext` it builds. crm-core's name columns are
+  NOT NULL, so a service that renders an actor's display name needs a persona that
+  carries one; until now each service had to subclass the provider to inject it.
+
 ## [0.46.0] - 2026-09-16
 
 Pin-only. tr-shared-lib v0.79.0 makes `BaseModel.id` client-generated (`default=uuid.uuid4`,

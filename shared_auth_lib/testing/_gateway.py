@@ -70,6 +70,8 @@ class Persona:
     user_id: UUID = field(default_factory=uuid4)
     external_auth_id: UUID = field(default_factory=uuid4)
     email: str = "test-user@example.com"
+    first_name: str | None = None
+    last_name: str | None = None
     roles: tuple[str, ...] = ("admin",)
     permissions: tuple[str, ...] = ()
     enabled_modules: tuple[str, ...] = field(
@@ -144,6 +146,8 @@ class FakeAuthContextProvider:
             external_auth_id=external_auth_id,
             user_id=persona.user_id,
             email=persona.email,
+            first_name=persona.first_name,
+            last_name=persona.last_name,
             tenant_id=persona.tenant_id,
             roles=list(persona.roles),
             permissions=list(persona.permissions),
