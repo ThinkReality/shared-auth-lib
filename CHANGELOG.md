@@ -5,6 +5,15 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.48.0] - 2026-09-20
+
+Pin-only. tr-shared-lib v0.80.0 makes every pooled Redis connection proxy-safe
+(`ProxySafeConnection` on the single `build_connection_pool`; TCP keepalive; checkout and
+write guards for a socket the proxy reset while idle). shared-auth-lib builds no Redis
+client — the HMAC replay guard takes one injected by the service, and the Redis-backed
+auth-context cache lives in crm-core — so every client it touches inherits the fix from
+the service's pool; no code here changes.
+
 ## [0.47.0] - 2026-09-20
 
 ### Fixed
