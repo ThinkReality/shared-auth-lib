@@ -10,8 +10,13 @@ Two-layer caching strategy:
 The in-memory cache is intentionally short-lived (60s default) so that
 permission/role changes propagate quickly without requiring explicit
 invalidation in most cases.
+
+Concurrent misses for the same user share one HTTP hop (singleflight):
+a page load fans out several parallel requests, and without this every
+one of them would fetch the same context on a cold worker.
 """
 
+import asyncio
 import time
 from uuid import UUID
 
@@ -69,6 +74,7 @@ class AuthContextClient:
         self._local_cache: dict[str, tuple[float, AuthContext]] = {}
         self._local_cache_ttl = local_cache_ttl
         self._local_cache_max_size = local_cache_max_size
+        self._inflight: dict[str, asyncio.Task[AuthContext]] = {}
 
     async def get_auth_context(
         self,
@@ -105,6 +111,29 @@ class AuthContextClient:
             extra={"external_auth_id": cache_key},
         )
 
+        # Singleflight: the check-then-set below has no intervening await, so it is
+        # atomic under asyncio — first miss fetches, later misses await the same task.
+        inflight = self._inflight.get(cache_key)
+        if inflight is not None:
+            return await inflight
+
+        task = asyncio.ensure_future(
+            self._fetch_and_cache(external_auth_id, cache_key, correlation_id)
+        )
+        self._inflight[cache_key] = task
+        try:
+            return await task
+        finally:
+            self._inflight.pop(cache_key, None)
+
+    async def _fetch_and_cache(
+        self,
+        external_auth_id: UUID,
+        cache_key: str,
+        correlation_id: str | None,
+    ) -> AuthContext:
+        """One HTTP hop to CRM-backend plus the local-cache write. Only the
+        singleflight leader runs this; concurrent misses await its task."""
         if await self._circuit.is_open():
             logger.warning(
                 "auth_context_circuit_open",
@@ -203,6 +232,7 @@ class AuthContextClient:
 
     async def close(self) -> None:
         self._local_cache.clear()
+        self._inflight.clear()
         await self._client.aclose()
 
     async def __aenter__(self) -> "AuthContextClient":

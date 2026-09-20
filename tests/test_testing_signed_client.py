@@ -159,6 +159,20 @@ class TestProviderSubstitution:
 
         assert provider.calls == [persona.external_auth_id]
 
+    @pytest.mark.asyncio
+    async def test_persona_names_reach_the_auth_context(self) -> None:
+        """crm-core serves NOT NULL names; a persona must be able to carry them."""
+        persona = Persona(first_name="Test", last_name="Agent")
+        ctx = await FakeAuthContextProvider(persona).get_auth_context(
+            persona.external_auth_id
+        )
+        assert (ctx.first_name, ctx.last_name) == ("Test", "Agent")
+
+    @pytest.mark.asyncio
+    async def test_persona_defaults_to_nameless(self) -> None:
+        ctx = await FakeAuthContextProvider(Persona()).get_auth_context(uuid4())
+        assert (ctx.first_name, ctx.last_name) == (None, None)
+
     def test_override_is_removed_on_close(self) -> None:
         """A leaked override would silently authenticate a later test's app."""
         app = _app()

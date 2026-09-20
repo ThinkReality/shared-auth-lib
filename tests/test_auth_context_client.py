@@ -1,5 +1,6 @@
 """Tests for AuthContextClient."""
 
+import asyncio
 from uuid import uuid4
 
 import httpx
@@ -285,5 +286,87 @@ class TestCircuitBreaker:
             with pytest.raises(AuthContextNotFoundError):
                 await client.get_auth_context(USER_ID)  # probe fails → stays open
             assert client._circuit.state == CircuitState.OPEN
+        finally:
+            await client.close()
+
+
+class TestSingleflight:
+    """Concurrent misses for one key share a single HTTP hop."""
+
+    def _make_counting_client(
+        self, respond
+    ) -> tuple[AuthContextClient, list[httpx.Request]]:
+        seen: list[httpx.Request] = []
+
+        async def transport(request: httpx.Request) -> httpx.Response:
+            seen.append(request)
+            await asyncio.sleep(0)  # yield so every waiter joins before the leader returns
+            return respond(request)
+
+        client = _make_client(httpx.MockTransport(transport))
+        return client, seen
+
+    @pytest.mark.asyncio
+    async def test_concurrent_misses_share_one_request(self):
+        client, seen = self._make_counting_client(
+            lambda req: httpx.Response(200, json=VALID_RESPONSE)
+        )
+        try:
+            results = await asyncio.gather(
+                *(client.get_auth_context(USER_ID) for _ in range(5))
+            )
+            assert len(seen) == 1
+            assert all(r == results[0] for r in results)
+            assert results[0].external_auth_id == USER_ID
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_failed_leader_propagates_and_caches_nothing(self):
+        client, seen = self._make_counting_client(
+            lambda req: httpx.Response(500, json={"detail": "boom"})
+        )
+        try:
+            results = await asyncio.gather(
+                *(client.get_auth_context(USER_ID) for _ in range(5)),
+                return_exceptions=True,
+            )
+            assert len(seen) == 1
+            assert all(isinstance(r, AuthContextNotFoundError) for r in results)
+            assert client._local_cache == {}
+            assert client._inflight == {}
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_different_ids_are_independent(self):
+        other_id = uuid4()
+
+        def respond(req: httpx.Request) -> httpx.Response:
+            requested = req.url.path.rsplit("/", 1)[-1]
+            return httpx.Response(
+                200, json={**VALID_RESPONSE, "external_auth_id": requested}
+            )
+
+        client, seen = self._make_counting_client(respond)
+        try:
+            first, second = await asyncio.gather(
+                client.get_auth_context(USER_ID),
+                client.get_auth_context(other_id),
+            )
+            assert len(seen) == 2
+            assert first.external_auth_id == USER_ID
+            assert second.external_auth_id == other_id
+        finally:
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_inflight_entry_removed_after_success(self):
+        client, _ = self._make_counting_client(
+            lambda req: httpx.Response(200, json=VALID_RESPONSE)
+        )
+        try:
+            await client.get_auth_context(USER_ID)
+            assert client._inflight == {}
         finally:
             await client.close()
