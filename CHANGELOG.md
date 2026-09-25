@@ -5,6 +5,14 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.49.0] - 2026-09-25
+
+Pin-only. tr-shared-lib v0.81.0: `CacheService.get_or_set` runs its fetch at most once,
+`tr_shared.testing` gains `record_statements` / `describe_statements` /
+`assert_session_dependencies_are_function_scoped` / `assert_no_server_default_primary_keys`, and
+`BaseModel.id` moves onto `UUIDPrimaryKeyMixin` (no schema change). shared-auth-lib uses none of
+these directly; no code here changes.
+
 ## [0.48.0] - 2026-09-20
 
 Pin-only. tr-shared-lib v0.80.0 makes every pooled Redis connection proxy-safe
