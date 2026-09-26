@@ -5,6 +5,15 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.50.0] - 2026-09-25
+
+### Added
+
+- `LMS_QUIZ_TAKE = "lms:quiz_take"` ("Be assigned LMS quizzes to take"). crm-core's LMS
+  decides who can be assigned a quiz by this permission together with `lms:read`, instead
+  of by a hardcoded list of role names. `sync-permissions` seeds it and grants it to the
+  `admin` / `super_admin` system roles; custom roles get it through the permission API.
+
 ## [0.49.0] - 2026-09-25
 
 Pin-only. tr-shared-lib v0.81.0: `CacheService.get_or_set` runs its fetch at most once,
