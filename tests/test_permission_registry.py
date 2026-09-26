@@ -63,6 +63,7 @@ def test_registry_covers_key_scopes():
         "hr:attendance_read",
         "recruitment:posting:create",
         "listing:metrics:read",
+        "lms:quiz_take",
     ]:
         assert required in names, f"{required} missing from ALL_PERMISSIONS"
 

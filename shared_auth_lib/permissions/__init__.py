@@ -113,6 +113,7 @@ from shared_auth_lib.permissions.lms import (
     LMS_ASSIGNMENT_CREATE,
     LMS_QUIZ_PUBLISH,
     LMS_QUIZ_VIEW_PROGRESS,
+    LMS_QUIZ_TAKE,
 )
 from shared_auth_lib.permissions.task import (
     TASK_ASSIGN,
@@ -232,6 +233,7 @@ __all__ = [
     "LMS_ASSIGNMENT_CREATE",
     "LMS_QUIZ_PUBLISH",
     "LMS_QUIZ_VIEW_PROGRESS",
+    "LMS_QUIZ_TAKE",
     # task
     "TASK_ASSIGN",
     "TASK_CREATE",

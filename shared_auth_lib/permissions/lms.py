@@ -8,6 +8,7 @@ LMS_AGENT_VIEW_STATS = "lms:agent_view_stats"
 LMS_ASSIGNMENT_CREATE = "lms:assignment_create"
 LMS_QUIZ_PUBLISH = "lms:quiz_publish"
 LMS_QUIZ_VIEW_PROGRESS = "lms:quiz_view_progress"
+LMS_QUIZ_TAKE = "lms:quiz_take"
 
 __all__ = [
     "LMS_READ",
@@ -15,4 +16,5 @@ __all__ = [
     "LMS_ASSIGNMENT_CREATE",
     "LMS_QUIZ_PUBLISH",
     "LMS_QUIZ_VIEW_PROGRESS",
+    "LMS_QUIZ_TAKE",
 ]

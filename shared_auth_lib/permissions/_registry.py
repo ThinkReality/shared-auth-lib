@@ -138,6 +138,7 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(lms.LMS_ASSIGNMENT_CREATE, "Create LMS assignments"),
     _d(lms.LMS_QUIZ_PUBLISH, "Publish LMS quizzes"),
     _d(lms.LMS_QUIZ_VIEW_PROGRESS, "View LMS quiz progress"),
+    _d(lms.LMS_QUIZ_TAKE, "Be assigned LMS quizzes to take"),
     # task
     _d(task.TASK_VIEW, "View tasks"),
     _d(task.TASK_CREATE, "Create tasks"),
