@@ -5,6 +5,20 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.52.0] - 2026-09-30
+
+Pin-only. tr-shared-lib v0.83.0 makes service-to-service calls carry the bound correlation id.
+No code here changes: `AuthContextClient` already receives the id from `require_auth`
+(`identity.correlation_id`) and sends it, and this package uses neither changed client (it imports
+only `CircuitBreaker`). What consumers of the stack see once they relock:
+
+- `IntegrationConfigClient` sends `X-Correlation-ID` on every request, from the bound id, and its
+  `get_config` no longer takes `correlation_id`; a caller that passed it must stop;
+- `ServiceHTTPClient` takes the header from the new `tr_shared.http.correlation.correlation_headers()`
+  instead of its own copy, with the same behaviour (an explicit header still wins);
+- the `integration_secrets_fetched` audit line carries the bound id, or null when none is bound,
+  instead of an empty string.
+
 ## [0.51.0] - 2026-09-30
 
 Pin-only. tr-shared-lib v0.82.0 rewrites `CorrelationIDMiddleware` and `LoggingMiddleware` as pure
