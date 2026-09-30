@@ -5,6 +5,25 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.51.0] - 2026-09-30
+
+Pin-only. tr-shared-lib v0.82.0 rewrites `CorrelationIDMiddleware` and `LoggingMiddleware` as pure
+ASGI middlewares and joins request logs to Celery task logs by one correlation id. No code here
+changes: `install_standard_middleware` builds the same stack with the same class names and
+constructor arguments, and `request.state.correlation_id`, which `IdentityExtractionMiddleware`
+reads, is still set. What consumers of the stack see once they relock:
+
+- an incoming `X-Correlation-ID` that does not match `^[A-Za-z0-9-]{1,64}$` is replaced by a UUID4;
+  the response header carries the id the request was logged under. `GatewayHMACMiddleware` still
+  echoes the raw incoming header in its own error bodies, so for an invalid id that body shows the
+  rejected value, not the replacement;
+- `LoggingMiddleware` logs `request_started`, `request_completed` and `request_failed` through
+  structlog with `duration_ms`, `status_code`, `correlation_id`, `tenant_id` and `client_ip` as
+  event keys;
+- stdlib log records now carry their `extra=` fields in the output, and `create_celery_app` requires
+  the keyword arguments `log_level` and `log_format`, so a service must pass both in the same change
+  that bumps its pin.
+
 ## [0.50.0] - 2026-09-25
 
 ### Added
