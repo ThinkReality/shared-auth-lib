@@ -939,7 +939,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "starlette", specifier = ">=0.27.0" },
-    { name = "tr-shared-lib", extras = ["http", "logging"], git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.83.0" },
+    { name = "tr-shared-lib", extras = ["http", "logging"], git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.84.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -953,7 +953,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "redis", specifier = ">=5.0.0" },
     { name = "ruff", specifier = ">=0.4.0" },
-    { name = "tr-shared-lib", extras = ["monitoring"], git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.83.0" },
+    { name = "tr-shared-lib", extras = ["monitoring"], git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.84.0" },
 ]
 
 [[package]]
@@ -988,8 +988,8 @@ wheels = [
 
 [[package]]
 name = "tr-shared-lib"
-version = "0.83.0"
-source = { git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.83.0#f3aec9f81e662c6c4bd3ec08e56a292d83e724f5" }
+version = "0.84.0"
+source = { git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.84.0#3c95dbec575c1f964f6c6bc76dd09ac63207b9ef" }
 dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
