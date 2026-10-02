@@ -52,13 +52,9 @@ def _mock_client(
 ) -> AsyncMock:
     client = AsyncMock(spec=AuthContextClient)
     if raise_not_found:
-        client.get_auth_context.side_effect = (
-            AuthContextNotFoundError("not found")
-        )
+        client.get_auth_context.side_effect = AuthContextNotFoundError("not found")
     else:
-        client.get_auth_context.return_value = (
-            auth_context or MOCK_AUTH_CONTEXT
-        )
+        client.get_auth_context.return_value = auth_context or MOCK_AUTH_CONTEXT
     return client
 
 
@@ -84,25 +80,19 @@ def _create_app(provider: AuthContextProvider) -> FastAPI:
 
     @app.get("/require-permission")
     async def route_require_permission(
-        auth: AuthContext = Depends(
-            require_permission("listing:create")
-        ),
+        auth: AuthContext = Depends(require_permission("listing:create")),
     ):
         return {"user_id": str(auth.user_id)}
 
     @app.get("/require-missing-permission")
     async def route_require_missing_permission(
-        auth: AuthContext = Depends(
-            require_permission("user:delete")
-        ),
+        auth: AuthContext = Depends(require_permission("user:delete")),
     ):
         return {"user_id": str(auth.user_id)}
 
     @app.get("/require-any-role")
     async def route_require_any_role(
-        auth: AuthContext = Depends(
-            require_any_role(["super_admin", "admin"])
-        ),
+        auth: AuthContext = Depends(require_any_role(["super_admin", "admin"])),
     ):
         return {"user_id": str(auth.user_id)}
 
@@ -153,9 +143,7 @@ class TestRequireAuth:
         assert resp.status_code == 401
 
     def test_inactive_user_returns_401(self):
-        ctx = MOCK_AUTH_CONTEXT.model_copy(
-            update={"is_active": False}
-        )
+        ctx = MOCK_AUTH_CONTEXT.model_copy(update={"is_active": False})
         mock = _mock_client(auth_context=ctx)
         client = TestClient(_create_app(mock))
         resp = client.get(
@@ -167,9 +155,7 @@ class TestRequireAuth:
         assert "inactive" in resp.json()["error"]["detail"].lower()
 
     def test_suspended_user_returns_403(self):
-        ctx = MOCK_AUTH_CONTEXT.model_copy(
-            update={"is_suspended": True}
-        )
+        ctx = MOCK_AUTH_CONTEXT.model_copy(update={"is_suspended": True})
         mock = _mock_client(auth_context=ctx)
         client = TestClient(_create_app(mock))
         resp = client.get(

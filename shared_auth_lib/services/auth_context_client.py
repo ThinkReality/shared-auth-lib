@@ -34,6 +34,8 @@ from shared_auth_lib.models.auth_context import AuthContext
 
 logger = get_logger(__name__)
 
+AUTH_CONTEXT_REQUEST_TIMEOUT_SECONDS = 6.0
+
 
 def _is_error_envelope(response: httpx.Response) -> bool:
     try:
@@ -60,7 +62,6 @@ class AuthContextClient:
         self,
         crm_core_url: str,
         service_token: str,
-        timeout: float | None = None,
         circuit_failure_threshold: int = 10,
         circuit_recovery_timeout: int = 15,
         local_cache_ttl: int = 60,
@@ -68,14 +69,9 @@ class AuthContextClient:
     ) -> None:
         self._crm_core_url = crm_core_url.rstrip("/")
         self._service_token = service_token
-        self._timeout = (
-            timeout
-            if timeout is not None
-            else get_settings().AUTH_CONTEXT_REQUEST_TIMEOUT
-        )
         self._client = httpx.AsyncClient(
             base_url=self._crm_core_url,
-            timeout=httpx.Timeout(self._timeout),
+            timeout=httpx.Timeout(AUTH_CONTEXT_REQUEST_TIMEOUT_SECONDS),
         )
         self._circuit = CircuitBreaker(
             name="auth-context-client",

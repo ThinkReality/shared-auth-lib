@@ -5,6 +5,45 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.53.0] - 2026-10-02
+
+A crm-core outage is now a 503, not a logout.
+
+### Fixed
+
+- `AuthContextClient` raises the new `AuthContextUnavailableError` when crm-core cannot
+  answer: circuit open, any HTTP error status other than an enveloped 404, timeout,
+  connect error, or a payload that does not validate as `AuthContext`. Each of these
+  used to raise `AuthContextNotFoundError`, so `require_auth` answered 401
+  `AUTHLIB_AUTH_002` and the frontend logged the user out during an outage.
+- `require_auth` and `optional_auth` map it to 503 `AUTHLIB_SERVICE_UNAVAILABLE_001`
+  with `Retry-After` set from `tr_shared.contracts.UNAVAILABLE_RETRY_AFTER_SECONDS`.
+  It is logged as `auth_context_unavailable`, never as an `auth_failure` audit event.
+
+### Changed (BREAKING)
+
+- `AuthContextNotFoundError` means only one thing: crm-core answered 404 with the
+  canonical `{"error": {...}}` envelope. A 404 with any other body (a wrong host behind
+  `AUTH_LIB_CRM_CORE_URL`) is unavailable, so it answers 503 where it used to answer 401.
+- A malformed auth-context payload (a crm-core contract bug) answered 401 and now
+  answers 503. It is still logged with `exc_info` and still counts against the circuit.
+- `optional_auth` no longer returns `None` when crm-core is unreachable; it answers 503.
+  Its only consumers are the `get_optional_*` helpers in content-platform and media,
+  which no route calls.
+- The auth-context request timeout goes from 5 s to 6 s, and is now the module
+  constant `AUTH_CONTEXT_REQUEST_TIMEOUT_SECONDS`. It must exceed crm-core's pool wait
+  plus DB connect timeout (`tr_shared.contracts.db_pool`), and
+  `tests/test_timeout_budget_order.py` enforces that.
+- Internal `tr-shared-lib` pin moves to `v0.84.0`, and the dependency floor to
+  `>=0.84.0`.
+
+### Removed (BREAKING)
+
+- `AuthLibSettings.AUTH_CONTEXT_REQUEST_TIMEOUT` (env
+  `AUTH_LIB_AUTH_CONTEXT_REQUEST_TIMEOUT`) and `AuthContextClient(timeout=)`. No
+  service set either one. `AuthLibSettings` uses `extra="ignore"`, so a Railway
+  variable still set to the old name is silently ignored.
+
 ## [0.52.0] - 2026-09-30
 
 Pin-only. tr-shared-lib v0.83.0 makes service-to-service calls carry the bound correlation id.

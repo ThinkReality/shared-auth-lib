@@ -38,9 +38,7 @@ VALID_RESPONSE = {
 @pytest.fixture
 def mock_transport_ok():
     return httpx.MockTransport(
-        lambda request: httpx.Response(
-            200, json=VALID_RESPONSE
-        )
+        lambda request: httpx.Response(200, json=VALID_RESPONSE)
     )
 
 
@@ -56,9 +54,7 @@ def mock_transport_404():
 @pytest.fixture
 def mock_transport_500():
     return httpx.MockTransport(
-        lambda request: httpx.Response(
-            500, json={"detail": "internal error"}
-        )
+        lambda request: httpx.Response(500, json={"detail": "internal error"})
     )
 
 
@@ -79,9 +75,7 @@ class TestAuthContextClient:
             await client.close()
 
     @pytest.mark.asyncio
-    async def test_404_raises_not_found(
-        self, mock_transport_404
-    ):
+    async def test_404_raises_not_found(self, mock_transport_404):
         client = auth_context_client(mock_transport_404)
         try:
             with pytest.raises(AuthContextNotFoundError):
@@ -90,9 +84,7 @@ class TestAuthContextClient:
             await client.close()
 
     @pytest.mark.asyncio
-    async def test_500_raises_unavailable(
-        self, mock_transport_500
-    ):
+    async def test_500_raises_unavailable(self, mock_transport_500):
         client = auth_context_client(mock_transport_500)
         try:
             with pytest.raises(AuthContextUnavailableError):
@@ -103,9 +95,7 @@ class TestAuthContextClient:
     @pytest.mark.asyncio
     async def test_timeout_raises_unavailable(self):
         def raise_timeout(request):
-            raise httpx.ReadTimeout(
-                "timed out", request=request
-            )
+            raise httpx.ReadTimeout("timed out", request=request)
 
         transport = httpx.MockTransport(raise_timeout)
         client = auth_context_client(transport)
@@ -127,10 +117,7 @@ class TestAuthContextClient:
         client = auth_context_client(transport)
         try:
             await client.get_auth_context(USER_ID)
-            assert (
-                captured_headers.get("x-service-token")
-                == "test-token"
-            )
+            assert captured_headers.get("x-service-token") == "test-token"
         finally:
             await client.close()
 
@@ -152,9 +139,7 @@ class TestAuthContextClient:
             await client.close()
 
     @pytest.mark.asyncio
-    async def test_close_is_idempotent(
-        self, mock_transport_ok
-    ):
+    async def test_close_is_idempotent(self, mock_transport_ok):
         client = auth_context_client(mock_transport_ok)
         await client.close()
         await client.close()
@@ -226,7 +211,7 @@ class TestCircuitBreaker:
     async def test_circuit_closes_on_success_in_half_open(self):
         """A successful probe in half-open state closes the circuit."""
         responses = [
-            httpx.Response(500, json={}),   # opens circuit
+            httpx.Response(500, json={}),  # opens circuit
             httpx.Response(200, json=VALID_RESPONSE),  # probe succeeds
         ]
         idx = 0
@@ -268,9 +253,7 @@ class TestCircuitBreaker:
         )
         client._client = httpx.AsyncClient(
             base_url="http://tr-crm-core:8000",
-            transport=httpx.MockTransport(
-                lambda req: httpx.Response(500, json={})
-            ),
+            transport=httpx.MockTransport(lambda req: httpx.Response(500, json={})),
         )
         try:
             with pytest.raises(AuthContextUnavailableError):
@@ -292,7 +275,9 @@ class TestSingleflight:
 
         async def transport(request: httpx.Request) -> httpx.Response:
             seen.append(request)
-            await asyncio.sleep(0)  # yield so every waiter joins before the leader returns
+            await asyncio.sleep(
+                0
+            )  # yield so every waiter joins before the leader returns
             return respond(request)
 
         client = auth_context_client(httpx.MockTransport(transport))
