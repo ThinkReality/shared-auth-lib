@@ -10,4 +10,7 @@ class InvalidIdentityHeaderError(SharedAuthError):
 
 
 class AuthContextNotFoundError(SharedAuthError):
-    """Raised when AuthContext cannot be fetched from CRM-backend."""
+    """Raised when CRM-backend answers 404 with its error envelope: no such user."""
+
+
+class AuthContextUnavailableError(SharedAuthError): ...

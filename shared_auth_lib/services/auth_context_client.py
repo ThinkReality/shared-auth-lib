@@ -25,11 +25,22 @@ from tr_shared.http.circuit_breaker import CircuitBreaker
 
 from shared_auth_lib.config import get_settings
 from shared_auth_lib.constants.headers import SERVICE_TOKEN_HEADER, SignedHeader
-from shared_auth_lib.exceptions import AuthContextNotFoundError
+from shared_auth_lib.exceptions import (
+    AuthContextNotFoundError,
+    AuthContextUnavailableError,
+)
 from shared_auth_lib.logging import get_logger
 from shared_auth_lib.models.auth_context import AuthContext
 
 logger = get_logger(__name__)
+
+
+def _is_error_envelope(response: httpx.Response) -> bool:
+    try:
+        body = response.json()
+    except ValueError:
+        return False
+    return isinstance(body, dict) and isinstance(body.get("error"), dict)
 
 
 class AuthContextClient:
@@ -139,7 +150,9 @@ class AuthContextClient:
                 "auth_context_circuit_open",
                 extra={"external_auth_id": cache_key},
             )
-            raise AuthContextNotFoundError("Circuit open: CRM-backend unavailable")
+            raise AuthContextUnavailableError(
+                "Circuit open: CRM-backend unavailable"
+            )
 
         url = f"/api/v1/internal/auth-context/{external_auth_id}"
         headers: dict[str, str] = {
@@ -165,8 +178,7 @@ class AuthContextClient:
 
             return result
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 404:
-                # 404 is a logical "not found" — not a service failure
+            if exc.response.status_code == 404 and _is_error_envelope(exc.response):
                 raise AuthContextNotFoundError(
                     f"AuthContext not found for {external_auth_id}"
                 ) from exc
@@ -178,7 +190,7 @@ class AuthContextClient:
                 },
             )
             await self._circuit.record_failure()
-            raise AuthContextNotFoundError(
+            raise AuthContextUnavailableError(
                 f"Failed to fetch AuthContext: HTTP {exc.response.status_code}"
             ) from exc
         except httpx.TimeoutException as exc:
@@ -187,7 +199,7 @@ class AuthContextClient:
                 extra={"external_auth_id": cache_key},
             )
             await self._circuit.record_failure()
-            raise AuthContextNotFoundError(
+            raise AuthContextUnavailableError(
                 f"Timeout fetching AuthContext for {external_auth_id}"
             ) from exc
         except Exception as exc:
@@ -200,7 +212,7 @@ class AuthContextClient:
                 exc_info=True,
             )
             await self._circuit.record_failure()
-            raise AuthContextNotFoundError(
+            raise AuthContextUnavailableError(
                 f"Failed to fetch AuthContext: {exc}"
             ) from exc
 

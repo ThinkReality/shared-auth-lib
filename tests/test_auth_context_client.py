@@ -6,11 +6,16 @@ from uuid import uuid4
 import httpx
 import pytest
 from tr_shared.http.circuit_breaker import CircuitState
+from tr_shared.schemas import build_error_envelope
 
-from shared_auth_lib.exceptions import AuthContextNotFoundError
+from shared_auth_lib.exceptions import (
+    AuthContextNotFoundError,
+    AuthContextUnavailableError,
+)
 from shared_auth_lib.services.auth_context_client import (
     AuthContextClient,
 )
+from tests.crm_core_stub import auth_context_client
 
 USER_ID = uuid4()
 TENANT_ID = uuid4()
@@ -43,7 +48,7 @@ def mock_transport_ok():
 def mock_transport_404():
     return httpx.MockTransport(
         lambda request: httpx.Response(
-            404, json={"detail": "not found"}
+            404, json=build_error_envelope("AuthContext not found")
         )
     )
 
@@ -57,23 +62,10 @@ def mock_transport_500():
     )
 
 
-def _make_client(transport: httpx.MockTransport) -> AuthContextClient:
-    client = AuthContextClient(
-        crm_core_url="http://tr-crm-core:8000",
-        service_token="test-token",
-        timeout=5.0,
-    )
-    client._client = httpx.AsyncClient(
-        base_url="http://tr-crm-core:8000",
-        transport=transport,
-    )
-    return client
-
-
 class TestAuthContextClient:
     @pytest.mark.asyncio
     async def test_successful_fetch(self, mock_transport_ok):
-        client = _make_client(mock_transport_ok)
+        client = auth_context_client(mock_transport_ok)
         try:
             ctx = await client.get_auth_context(USER_ID)
             assert ctx.external_auth_id == USER_ID
@@ -90,7 +82,7 @@ class TestAuthContextClient:
     async def test_404_raises_not_found(
         self, mock_transport_404
     ):
-        client = _make_client(mock_transport_404)
+        client = auth_context_client(mock_transport_404)
         try:
             with pytest.raises(AuthContextNotFoundError):
                 await client.get_auth_context(USER_ID)
@@ -98,27 +90,27 @@ class TestAuthContextClient:
             await client.close()
 
     @pytest.mark.asyncio
-    async def test_500_raises_not_found(
+    async def test_500_raises_unavailable(
         self, mock_transport_500
     ):
-        client = _make_client(mock_transport_500)
+        client = auth_context_client(mock_transport_500)
         try:
-            with pytest.raises(AuthContextNotFoundError):
+            with pytest.raises(AuthContextUnavailableError):
                 await client.get_auth_context(USER_ID)
         finally:
             await client.close()
 
     @pytest.mark.asyncio
-    async def test_timeout_raises_not_found(self):
+    async def test_timeout_raises_unavailable(self):
         def raise_timeout(request):
             raise httpx.ReadTimeout(
                 "timed out", request=request
             )
 
         transport = httpx.MockTransport(raise_timeout)
-        client = _make_client(transport)
+        client = auth_context_client(transport)
         try:
-            with pytest.raises(AuthContextNotFoundError):
+            with pytest.raises(AuthContextUnavailableError):
                 await client.get_auth_context(USER_ID)
         finally:
             await client.close()
@@ -132,7 +124,7 @@ class TestAuthContextClient:
             return httpx.Response(200, json=VALID_RESPONSE)
 
         transport = httpx.MockTransport(capture_request)
-        client = _make_client(transport)
+        client = auth_context_client(transport)
         try:
             await client.get_auth_context(USER_ID)
             assert (
@@ -152,7 +144,7 @@ class TestAuthContextClient:
             return httpx.Response(200, json=VALID_RESPONSE)
 
         transport = httpx.MockTransport(capture_request)
-        client = _make_client(transport)
+        client = auth_context_client(transport)
         try:
             await client.get_auth_context(USER_ID)
             assert f"/internal/auth-context/{USER_ID}" in captured_url
@@ -163,7 +155,7 @@ class TestAuthContextClient:
     async def test_close_is_idempotent(
         self, mock_transport_ok
     ):
-        client = _make_client(mock_transport_ok)
+        client = auth_context_client(mock_transport_ok)
         await client.close()
         await client.close()
 
@@ -193,7 +185,7 @@ class TestCircuitBreaker:
         client = self._make_failing_client()
         try:
             for _ in range(3):
-                with pytest.raises(AuthContextNotFoundError):
+                with pytest.raises(AuthContextUnavailableError):
                     await client.get_auth_context(USER_ID)
             assert client._circuit.state == CircuitState.OPEN
         finally:
@@ -221,10 +213,10 @@ class TestCircuitBreaker:
         )
         try:
             # First call: triggers failure and opens circuit (1 HTTP call)
-            with pytest.raises(AuthContextNotFoundError):
+            with pytest.raises(AuthContextUnavailableError):
                 await client.get_auth_context(USER_ID)
             # Second call: circuit is open, no HTTP call should be made
-            with pytest.raises(AuthContextNotFoundError):
+            with pytest.raises(AuthContextUnavailableError):
                 await client.get_auth_context(USER_ID)
             assert call_count == 1  # only the first call hit the network
         finally:
@@ -256,7 +248,7 @@ class TestCircuitBreaker:
             transport=httpx.MockTransport(sequential),
         )
         try:
-            with pytest.raises(AuthContextNotFoundError):
+            with pytest.raises(AuthContextUnavailableError):
                 await client.get_auth_context(USER_ID)  # opens circuit
             # Wait is not needed because recovery_timeout=0
             ctx = await client.get_auth_context(USER_ID)  # probe succeeds
@@ -281,9 +273,9 @@ class TestCircuitBreaker:
             ),
         )
         try:
-            with pytest.raises(AuthContextNotFoundError):
+            with pytest.raises(AuthContextUnavailableError):
                 await client.get_auth_context(USER_ID)  # opens circuit
-            with pytest.raises(AuthContextNotFoundError):
+            with pytest.raises(AuthContextUnavailableError):
                 await client.get_auth_context(USER_ID)  # probe fails → stays open
             assert client._circuit.state == CircuitState.OPEN
         finally:
@@ -303,7 +295,7 @@ class TestSingleflight:
             await asyncio.sleep(0)  # yield so every waiter joins before the leader returns
             return respond(request)
 
-        client = _make_client(httpx.MockTransport(transport))
+        client = auth_context_client(httpx.MockTransport(transport))
         return client, seen
 
     @pytest.mark.asyncio
@@ -332,7 +324,7 @@ class TestSingleflight:
                 return_exceptions=True,
             )
             assert len(seen) == 1
-            assert all(isinstance(r, AuthContextNotFoundError) for r in results)
+            assert all(isinstance(r, AuthContextUnavailableError) for r in results)
             assert client._local_cache == {}
             assert client._inflight == {}
         finally:
@@ -368,5 +360,36 @@ class TestSingleflight:
         try:
             await client.get_auth_context(USER_ID)
             assert client._inflight == {}
+        finally:
+            await client.close()
+
+
+def _refuse(request: httpx.Request) -> httpx.Response:
+    raise httpx.ConnectError("refused", request=request)
+
+
+def _answer(status: int, **body: object):
+    return lambda request: httpx.Response(status, **body)
+
+
+class TestUnavailableIsNotNotFound:
+    @pytest.mark.parametrize(
+        "handler",
+        [
+            pytest.param(_answer(502, json={}), id="502"),
+            pytest.param(_answer(503, json={}), id="503"),
+            pytest.param(_answer(504, json={}), id="504"),
+            pytest.param(_refuse, id="connect-error"),
+            pytest.param(_answer(200, json={"data": {"email": 1}}), id="malformed"),
+            pytest.param(_answer(404, json={"detail": "Not Found"}), id="bare-404"),
+            pytest.param(_answer(404, text="Application not found"), id="text-404"),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_is_unavailable(self, handler):
+        client = auth_context_client(httpx.MockTransport(handler))
+        try:
+            with pytest.raises(AuthContextUnavailableError):
+                await client.get_auth_context(USER_ID)
         finally:
             await client.close()
