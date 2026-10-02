@@ -3,14 +3,18 @@
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
+import httpx
 import pytest
 from fastapi import Depends, FastAPI, Request
 from fastapi.testclient import TestClient
+from structlog.testing import capture_logs
+from tr_shared.contracts import UNAVAILABLE_RETRY_AFTER_SECONDS
 from tr_shared.middleware import register_exception_handlers
+from tr_shared.schemas import build_error_envelope
 
 from shared_auth_lib.dependencies.auth_dependencies import (
-    _AuthClientRegistry,
-    init_auth_context_client,
+    AuthContextProvider,
+    get_auth_context_client,
     optional_auth,
     require_any_role,
     require_auth,
@@ -24,17 +28,11 @@ from shared_auth_lib.models.auth_context import AuthContext
 from shared_auth_lib.services.auth_context_client import (
     AuthContextClient,
 )
+from tests.crm_core_stub import auth_context_client
 
 USER_ID = uuid4()
 TENANT_ID = uuid4()
 
-
-@pytest.fixture(autouse=True)
-def reset_auth_registry():
-    """Ensure registry is clean before and after every test."""
-    _AuthClientRegistry.reset()
-    yield
-    _AuthClientRegistry.reset()
 
 MOCK_AUTH_CONTEXT = AuthContext(
     external_auth_id=USER_ID,
@@ -64,7 +62,7 @@ def _mock_client(
     return client
 
 
-def _create_app(mock_client: AsyncMock) -> FastAPI:
+def _create_app(provider: AuthContextProvider) -> FastAPI:
     app = FastAPI()
     app.add_middleware(IdentityExtractionMiddleware)
     # Every service in the fleet installs these at startup. Without them this app
@@ -73,7 +71,7 @@ def _create_app(mock_client: AsyncMock) -> FastAPI:
     # the real canonical envelope regressed.
     register_exception_handlers(app)
 
-    init_auth_context_client(mock_client)
+    app.dependency_overrides[get_auth_context_client] = lambda: provider
 
     @app.get("/require-auth")
     async def route_require_auth(
@@ -299,3 +297,71 @@ class TestOptionalAuth:
         client = TestClient(_create_app(mock))
         resp = client.get("/optional-auth")
         assert resp.json()["state_set"] is False
+
+
+SIGNED_IN = {"X-User-Id": str(USER_ID)}
+BOTH_DEPENDENCIES = ["/require-auth", "/optional-auth"]
+
+
+def _crm_core_answers(status: int):
+    return lambda request: httpx.Response(status, json={})
+
+
+def _crm_core_refuses(request: httpx.Request) -> httpx.Response:
+    raise httpx.ConnectError("refused", request=request)
+
+
+class TestAuthServiceUnavailable:
+    @pytest.mark.parametrize("path", BOTH_DEPENDENCIES)
+    @pytest.mark.parametrize(
+        "handler",
+        [
+            pytest.param(_crm_core_answers(500), id="5xx"),
+            pytest.param(_crm_core_refuses, id="connect-error"),
+        ],
+    )
+    def test_unreachable_crm_core_is_503(self, handler, path):
+        app = _create_app(auth_context_client(httpx.MockTransport(handler)))
+        with TestClient(app) as client:
+            resp = client.get(path, headers=SIGNED_IN)
+        assert resp.status_code == 503
+        assert resp.json()["error"]["code"] == "AUTHLIB_SERVICE_UNAVAILABLE_001"
+        assert resp.headers["retry-after"] == str(UNAVAILABLE_RETRY_AFTER_SECONDS)
+
+    @pytest.mark.parametrize("path", BOTH_DEPENDENCIES)
+    def test_open_circuit_is_503_and_skips_crm_core(self, path):
+        calls = []
+
+        def failing(request: httpx.Request) -> httpx.Response:
+            calls.append(request)
+            return httpx.Response(500, json={})
+
+        crm_core = auth_context_client(
+            httpx.MockTransport(failing),
+            circuit_failure_threshold=1,
+            circuit_recovery_timeout=9999,
+        )
+        with TestClient(_create_app(crm_core)) as client:
+            first = client.get(path, headers=SIGNED_IN)
+            second = client.get(path, headers=SIGNED_IN)
+        assert (first.status_code, second.status_code) == (503, 503)
+        assert len(calls) == 1
+
+    def test_unavailable_is_logged_but_not_audited_as_auth_failure(self):
+        crm_core = auth_context_client(httpx.MockTransport(_crm_core_refuses))
+        app = _create_app(crm_core)
+        with capture_logs() as logs, TestClient(app) as client:
+            client.get("/require-auth", headers=SIGNED_IN)
+        events = [entry["event"] for entry in logs]
+        assert "auth_context_unavailable" in events
+        assert "auth_failure" not in events
+
+    def test_enveloped_404_is_still_401(self):
+        not_found = build_error_envelope("AuthContext not found")
+        crm_core = auth_context_client(
+            httpx.MockTransport(lambda request: httpx.Response(404, json=not_found))
+        )
+        with TestClient(_create_app(crm_core)) as client:
+            resp = client.get("/require-auth", headers=SIGNED_IN)
+        assert resp.status_code == 401
+        assert resp.json()["error"]["code"] == "AUTHLIB_AUTH_002"
