@@ -28,7 +28,6 @@ class AuthLibSettings(BaseSettings):
     CRM_CORE_URL: str = "http://tr-crm-core:8000"
     SERVICE_TOKEN: str = ""
     GATEWAY_TIMESTAMP_TOLERANCE: int = 30
-    AUTH_CONTEXT_REQUEST_TIMEOUT: float = 5.0
 
     # Skips HMAC verification and injects a fake AuthContext; guarded to dev environments only.
     DEV_MODE_BYPASS: bool = False

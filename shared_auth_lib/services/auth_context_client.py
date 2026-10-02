@@ -25,11 +25,24 @@ from tr_shared.http.circuit_breaker import CircuitBreaker
 
 from shared_auth_lib.config import get_settings
 from shared_auth_lib.constants.headers import SERVICE_TOKEN_HEADER, SignedHeader
-from shared_auth_lib.exceptions import AuthContextNotFoundError
+from shared_auth_lib.exceptions import (
+    AuthContextNotFoundError,
+    AuthContextUnavailableError,
+)
 from shared_auth_lib.logging import get_logger
 from shared_auth_lib.models.auth_context import AuthContext
 
 logger = get_logger(__name__)
+
+AUTH_CONTEXT_REQUEST_TIMEOUT_SECONDS = 6.0
+
+
+def _is_error_envelope(response: httpx.Response) -> bool:
+    try:
+        body = response.json()
+    except ValueError:
+        return False
+    return isinstance(body, dict) and isinstance(body.get("error"), dict)
 
 
 class AuthContextClient:
@@ -49,7 +62,6 @@ class AuthContextClient:
         self,
         crm_core_url: str,
         service_token: str,
-        timeout: float | None = None,
         circuit_failure_threshold: int = 10,
         circuit_recovery_timeout: int = 15,
         local_cache_ttl: int = 60,
@@ -57,14 +69,9 @@ class AuthContextClient:
     ) -> None:
         self._crm_core_url = crm_core_url.rstrip("/")
         self._service_token = service_token
-        self._timeout = (
-            timeout
-            if timeout is not None
-            else get_settings().AUTH_CONTEXT_REQUEST_TIMEOUT
-        )
         self._client = httpx.AsyncClient(
             base_url=self._crm_core_url,
-            timeout=httpx.Timeout(self._timeout),
+            timeout=httpx.Timeout(AUTH_CONTEXT_REQUEST_TIMEOUT_SECONDS),
         )
         self._circuit = CircuitBreaker(
             name="auth-context-client",
@@ -139,7 +146,9 @@ class AuthContextClient:
                 "auth_context_circuit_open",
                 extra={"external_auth_id": cache_key},
             )
-            raise AuthContextNotFoundError("Circuit open: CRM-backend unavailable")
+            raise AuthContextUnavailableError(
+                "Circuit open: CRM-backend unavailable"
+            )
 
         url = f"/api/v1/internal/auth-context/{external_auth_id}"
         headers: dict[str, str] = {
@@ -165,8 +174,7 @@ class AuthContextClient:
 
             return result
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 404:
-                # 404 is a logical "not found" — not a service failure
+            if exc.response.status_code == 404 and _is_error_envelope(exc.response):
                 raise AuthContextNotFoundError(
                     f"AuthContext not found for {external_auth_id}"
                 ) from exc
@@ -178,7 +186,7 @@ class AuthContextClient:
                 },
             )
             await self._circuit.record_failure()
-            raise AuthContextNotFoundError(
+            raise AuthContextUnavailableError(
                 f"Failed to fetch AuthContext: HTTP {exc.response.status_code}"
             ) from exc
         except httpx.TimeoutException as exc:
@@ -187,7 +195,7 @@ class AuthContextClient:
                 extra={"external_auth_id": cache_key},
             )
             await self._circuit.record_failure()
-            raise AuthContextNotFoundError(
+            raise AuthContextUnavailableError(
                 f"Timeout fetching AuthContext for {external_auth_id}"
             ) from exc
         except Exception as exc:
@@ -200,7 +208,7 @@ class AuthContextClient:
                 exc_info=True,
             )
             await self._circuit.record_failure()
-            raise AuthContextNotFoundError(
+            raise AuthContextUnavailableError(
                 f"Failed to fetch AuthContext: {exc}"
             ) from exc
 

@@ -5,10 +5,18 @@ from typing import Any, Protocol
 from uuid import UUID
 
 from fastapi import Depends, Request
-from tr_shared.exceptions import AuthenticationError, AuthorizationError
+from tr_shared.contracts import UNAVAILABLE_RETRY_AFTER_SECONDS
+from tr_shared.exceptions import (
+    AuthenticationError,
+    AuthorizationError,
+    ServiceUnavailableError,
+)
 
 from shared_auth_lib.constants.roles import SystemRole
-from shared_auth_lib.exceptions import AuthContextNotFoundError
+from shared_auth_lib.exceptions import (
+    AuthContextNotFoundError,
+    AuthContextUnavailableError,
+)
 from shared_auth_lib.logging import get_logger
 from shared_auth_lib.middleware.identity_middleware import (
     get_gateway_identity,
@@ -39,6 +47,24 @@ logger = get_logger(__name__)
 # Emits structured events that can be consumed by Grafana/Loki
 # alerting rules (e.g., "50+ auth failures from same IP in 5 min").
 _audit_logger = get_logger("shared_auth_lib.audit")
+
+
+def _auth_unavailable(
+    request: Request, identity: GatewayIdentityHeaders
+) -> ServiceUnavailableError:
+    logger.warning(
+        "auth_context_unavailable",
+        extra={
+            "external_auth_id": str(identity.user_id),
+            "path": request.url.path,
+            "correlation_id": identity.correlation_id,
+        },
+    )
+    return ServiceUnavailableError(
+        detail="Authorization service unavailable",
+        code="AUTHLIB_SERVICE_UNAVAILABLE_001",
+        retry_after=UNAVAILABLE_RETRY_AFTER_SECONDS,
+    )
 
 
 class _AuthClientRegistry:
@@ -171,6 +197,8 @@ async def require_auth(
             detail="Invalid or expired authentication",
             code="AUTHLIB_AUTH_002",
         )
+    except AuthContextUnavailableError as exc:
+        raise _auth_unavailable(request, identity) from exc
 
     if not auth_context.is_active:
         _audit_logger.warning(
@@ -321,6 +349,8 @@ async def optional_auth(
         )
     except AuthContextNotFoundError:
         return None
+    except AuthContextUnavailableError as exc:
+        raise _auth_unavailable(request, identity) from exc
 
     if not auth_context.is_active or auth_context.is_suspended:
         return None
