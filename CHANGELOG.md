@@ -5,6 +5,21 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.54.0] - 2026-10-03
+
+Pin-only. tr-shared-lib v0.85.0 gives sync SQLAlchemy engines the same outage contract as async
+engines and adds two guards that keep database errors at the boundary. No code here changes:
+this package uses neither a sync engine nor the removed function. What consumers of the stack see
+once they relock:
+
+- **Breaking:** `tr_shared.db.install_transaction_statement_timeout` is removed. A sync engine is
+  prepared with `prepare_sync_engine(engine, *, service_name, statement_timeout_seconds)`, built
+  with `poolclass=OutageTypedQueuePool` or `NullPool`; realty and WAM are the callers;
+- on a prepared sync engine, a failed connect (a wrong password included), a lost connection, a
+  statement over its cap and a pool wait raise `DatabaseUnavailableError` / `DatabaseTimeoutError`;
+- new `tr_shared.db.DATABASE_OUTAGE_ERRORS` and `set_local_statement_timeout_sql()`;
+- new `tr_shared.testing.guards.assert_no_swallowed_db_errors` and `assert_no_flattened_errors`.
+
 ## [0.53.0] - 2026-10-02
 
 A crm-core outage is now a 503, not a logout.
