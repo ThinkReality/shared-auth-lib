@@ -5,6 +5,50 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.55.0] - 2026-10-07
+
+The HMAC replay check works on every event loop, and a non-ASCII signature is a 403, not a 500.
+Pins tr-shared-lib v0.86.0.
+
+### Fixed
+
+- **A non-ASCII `X-Gateway-Signature` answers 403 `AUTHLIB_AUTH_009`.** `verify_signature`
+  compared `str` values with `hmac.compare_digest`, which raises `TypeError` on non-ASCII
+  input, so any client could turn a signed route into a pre-auth 500 and a Slack page on all
+  seven HMAC services. It now uses `tr_shared.security.constant_time_equals`. Ruff `TID251`
+  bans `hmac.compare_digest` and `secrets.compare_digest` in this package.
+- **A replayed signature is rejected on any event loop.** The middleware was handed one Redis
+  client built on whatever loop came first. On any other loop (a new loop per request under
+  `TestClient`, a reloaded worker) every replay check failed with `Event loop is closed`,
+  failed open, and let the replay through. The middleware now builds its own pooled client
+  through `tr_shared.redis.pool.build_connection_pool` and rebuilds it when the running loop
+  changes. Timeouts are 1 s (`REPLAY_REDIS_TIMEOUT_SECONDS`), so a hung Redis costs a signed
+  request at most 1 s instead of stalling it.
+- **A skipped replay check is no longer counted as a success.** When Redis fails, the request
+  is logged as `hmac_replay_check_skipped` and counted in the new `hmac_stats` key
+  `replay_check_skipped`. It counts toward `total`, not toward `failure_rate`. In fail-closed
+  mode the 403 `AUTHLIB_AUTH_010` now says "Replay protection unavailable" and is no longer
+  counted as a replay.
+
+### Changed (BREAKING)
+
+- `install_standard_middleware(hmac_redis_url=...)` replaces `hmac_redis_client=`. Still
+  required, no default.
+- `GatewayHMACMiddleware(redis_url=...)` replaces `redis_client=`. A URL that is not
+  `redis://` raises `ValueError` at construction.
+- `redis` is now a runtime dependency, through `tr-shared-lib[http,logging,redis]`.
+- Internal `tr-shared-lib` pin moves to `v0.86.0`, and the dependency floor to `>=0.86.0`.
+
+### Consumer action
+
+- Pass `hmac_redis_url=settings.REDIS_URL` (content: `settings.redis_url`). Delete the
+  import-time `Redis.from_url(...)` client, the lead-management and people-finance lifespan
+  client and its close, and WAM's `_LazyHmacRedis` proxy.
+- Fail-open stays the default. Fail-closed is a separate ticket (T-37), together with the
+  unit lane, which sends signed requests with no Redis.
+- Any future pool-level retry in tr-shared-lib must not retry this `SET NX`: a resent claim
+  whose first reply was lost reads as a replay and would 403 a valid request.
+
 ## [0.54.0] - 2026-10-03
 
 Pin-only. tr-shared-lib v0.85.0 gives sync SQLAlchemy engines the same outage contract as async

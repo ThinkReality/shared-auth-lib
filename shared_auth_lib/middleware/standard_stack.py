@@ -94,7 +94,7 @@ def install_standard_middleware(
     environment: str,
     hmac_secret: str,
     hmac_skip_paths: Sequence[str],
-    hmac_redis_client: Any,
+    hmac_redis_url: str,
     cors: dict[str, Any] | None,
     slack_webhook_url: str | None = "",
     hmac_tolerance_seconds: int | None = None,
@@ -116,11 +116,11 @@ def install_standard_middleware(
         hmac_secret: Shared secret with the gateway.
         hmac_skip_paths: Paths exempt from signature verification. Any sequence
             — tr-realty-data-hub declares a set — normalised to a list here.
-        hmac_redis_client: REQUIRED, and typed `Any` on purpose:
-            tr-whatsApp-marketing-agent passes a forwarding proxy that
-            re-resolves `app.state.hmac_redis` on each lifespan cycle. Required
-            rather than defaulted because a default of `None` silently disables
-            replay protection, which is how two services shipped without it.
+        hmac_redis_url: REQUIRED. The middleware builds its own pooled
+            client per running event loop, so a client built on one loop is
+            never reused on another. Required rather than defaulted because a
+            default of `None` silently disables replay protection, which is how
+            two services shipped without it.
         cors: Kwargs for `CORSMiddleware`, or None to install no CORS layer
             (tr-whatsApp-marketing-agent, when `CORS_ORIGINS` is empty). A dict
             rather than discrete parameters because the seven services' CORS
@@ -171,7 +171,7 @@ def install_standard_middleware(
     hmac_kwargs: dict[str, Any] = {
         "secret": hmac_secret,
         "skip_paths": list(hmac_skip_paths),
-        "redis_client": hmac_redis_client,
+        "redis_url": hmac_redis_url,
     }
     if hmac_tolerance_seconds is not None:
         hmac_kwargs["tolerance_seconds"] = hmac_tolerance_seconds

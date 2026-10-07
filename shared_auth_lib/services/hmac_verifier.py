@@ -17,6 +17,8 @@ import hmac
 from datetime import UTC, datetime
 from typing import Final
 
+from tr_shared.security import constant_time_equals
+
 from shared_auth_lib.constants.headers import SIGNED_HEADERS
 
 TIMESTAMP_TOLERANCE_SECONDS: Final[int] = 30
@@ -122,4 +124,4 @@ def verify_signature(
         return False
 
     expected = compute_signature(method, path, headers, secret, timestamp)
-    return hmac.compare_digest(expected, signature)
+    return constant_time_equals(expected, signature)
