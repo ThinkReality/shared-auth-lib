@@ -32,11 +32,6 @@ class _OtherMarker(BaseHTTPMiddleware):
     pass
 
 
-class _FakeRedis:
-    async def set(self, *args: Any, **kwargs: Any) -> Any:
-        return True
-
-
 def build(**overrides: Any) -> FastAPI:
     app = FastAPI()
     kwargs: dict[str, Any] = {
@@ -45,7 +40,7 @@ def build(**overrides: Any) -> FastAPI:
         "cors": {"allow_origins": ["http://localhost:3000"]},
         "hmac_secret": SECRET,
         "hmac_skip_paths": ["/api/v1/health"],
-        "hmac_redis_client": _FakeRedis(),
+        "hmac_redis_url": "redis://localhost:6379/0",
     }
     kwargs.update(overrides)
     install_standard_middleware(app, **kwargs)
@@ -158,7 +153,7 @@ def test_idempotency_is_inside_hmac():
     )
 
 
-def test_hmac_redis_client_is_required():
+def test_hmac_redis_url_is_required():
     """Omitting it must be a TypeError, not a silent deployment with replay
     protection off. Two services shipped without one for exactly that reason."""
     app = FastAPI()
@@ -297,3 +292,13 @@ def test_the_forwarded_replay_flag_reaches_the_middleware_instance():
     assert hmac._replay_fail_open is False, (
         "the flag was accepted but did not become the instance's posture"
     )
+
+
+def test_the_hmac_redis_url_reaches_the_middleware_instance():
+    app = build(hmac_redis_url="redis://cache:6379/3")
+
+    installed = [
+        m for m in app.user_middleware if m.cls.__name__ == "GatewayHMACMiddleware"
+    ]
+    hmac = installed[0].cls(app=None, **installed[0].kwargs)
+    assert hmac._redis_url == "redis://cache:6379/3"

@@ -163,6 +163,10 @@ class TestVerifySignature:
             **params, signature="0" * 64
         ) is False
 
+    def test_non_ascii_signature_fails_instead_of_raising(self):
+        params, _ = self._sign()
+        assert verify_signature(**params, signature="é" * 64) is False
+
     def test_wrong_secret_fails(self):
         params, sig = self._sign()
         params["secret"] = "wrong-secret"

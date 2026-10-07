@@ -1,19 +1,25 @@
-from typing import Any
+import asyncio
 
 from fastapi import status
 from fastapi.responses import JSONResponse
+from redis.asyncio import Redis
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
 from tr_shared.contracts.headers import HttpHeader
+from tr_shared.redis.connection import require_plain_redis_url
+from tr_shared.redis.pool import build_connection_pool
 from tr_shared.schemas import build_error_envelope
 
 from shared_auth_lib.logging import get_logger
 from shared_auth_lib.services.hmac_verifier import verify_signature
 
 logger = get_logger(__name__)
+
+REPLAY_REDIS_TIMEOUT_SECONDS = 1
+REPLAY_REDIS_MAX_CONNECTIONS = 50
 
 
 def _rejected(request: Request, message: str, code: str) -> JSONResponse:
@@ -79,7 +85,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         skip_paths: list[str] | None = None,
         tolerance_seconds: int = 30,
         dev_mode_bypass: bool | None = None,
-        redis_client: Any | None = None,
+        redis_url: str | None = None,
         replay_protection_fail_open: bool = True,
     ) -> None:
         super().__init__(app)
@@ -88,7 +94,10 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             skip_paths if skip_paths is not None else DEFAULT_SKIP_PATHS
         )
         self.tolerance_seconds = tolerance_seconds
-        self._redis = redis_client
+        if redis_url is not None:
+            require_plain_redis_url(redis_url)
+        self._redis_url = redis_url
+        self._replay_client: tuple[asyncio.AbstractEventLoop, Redis] | None = None
         self._replay_fail_open = replay_protection_fail_open
         if dev_mode_bypass is None:
             from shared_auth_lib.config import get_settings
@@ -109,6 +118,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         self._hmac_failure_missing: int = 0
         self._hmac_failure_invalid: int = 0
         self._hmac_failure_replay: int = 0
+        self._replay_check_skipped: int = 0
 
     @property
     def hmac_stats(self) -> dict:
@@ -117,6 +127,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             + self._hmac_failure_missing
             + self._hmac_failure_invalid
             + self._hmac_failure_replay
+            + self._replay_check_skipped
         )
         failure_rate = 0.0
         if total > 0:
@@ -131,6 +142,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             "failure_missing_headers": self._hmac_failure_missing,
             "failure_invalid_signature": self._hmac_failure_invalid,
             "failure_replay": self._hmac_failure_replay,
+            "replay_check_skipped": self._replay_check_skipped,
             "total": total,
             "failure_rate": round(failure_rate, 2),
         }
@@ -202,53 +214,77 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
                 "AUTHLIB_AUTH_009",
             )
 
-        if self._redis is not None and await self._is_replay(
-            signature, path, request
-        ):
-            self._hmac_failure_replay += 1
-            logger.warning(
-                "replayed_gateway_signature",
-                extra={
-                    "path": path,
-                    "correlation_id": request.headers.get(
-                        HttpHeader.CORRELATION_ID.value
-                    ),
-                    "metric_type": "hmac_verification",
-                    "result": "failure_replay",
-                },
-            )
-            return _rejected(
-                request,
-                "Replayed gateway signature",
-                "AUTHLIB_AUTH_010",
-            )
+        if self._redis_url is not None:
+            first_sighting = await self._claim_signature(signature, path, request)
+            if first_sighting is None:
+                self._replay_check_skipped += 1
+                if self._replay_fail_open:
+                    return await call_next(request)
+                return _rejected(
+                    request,
+                    "Replay protection unavailable",
+                    "AUTHLIB_AUTH_010",
+                )
+            if not first_sighting:
+                self._hmac_failure_replay += 1
+                logger.warning(
+                    "replayed_gateway_signature",
+                    extra={
+                        "path": path,
+                        "correlation_id": request.headers.get(
+                            HttpHeader.CORRELATION_ID.value
+                        ),
+                        "metric_type": "hmac_verification",
+                        "result": "failure_replay",
+                    },
+                )
+                return _rejected(
+                    request,
+                    "Replayed gateway signature",
+                    "AUTHLIB_AUTH_010",
+                )
 
         self._hmac_success += 1
         return await call_next(request)
 
-    async def _is_replay(self, signature: str, path: str, request: Request) -> bool:
-        # dispatch() only calls _is_replay when self._redis is not None.
-        assert self._redis is not None
-        key = f"hmac_sig:{signature}"
-        try:
-            stored = await self._redis.set(
-                key, "1", nx=True, ex=self.tolerance_seconds
+    def _replay_redis(self) -> Redis:
+        assert self._redis_url is not None
+        loop = asyncio.get_running_loop()
+        if self._replay_client is None or self._replay_client[0] is not loop:
+            pool = build_connection_pool(
+                self._redis_url,
+                max_connections=REPLAY_REDIS_MAX_CONNECTIONS,
+                socket_timeout=REPLAY_REDIS_TIMEOUT_SECONDS,
+                socket_connect_timeout=REPLAY_REDIS_TIMEOUT_SECONDS,
+                decode_responses=True,
             )
-            # redis-py SET NX: True = first sighting, None = already present (replay).
-            return not bool(stored)
+            self._replay_client = (loop, Redis(connection_pool=pool))
+        return self._replay_client[1]
+
+    async def _claim_signature(
+        self, signature: str, path: str, request: Request
+    ) -> bool | None:
+        try:
+            return bool(
+                await self._replay_redis().set(
+                    f"hmac_sig:{signature}", "1", nx=True, ex=self.tolerance_seconds
+                )
+            )
         except Exception as exc:
             logger.warning(
-                "hmac_replay_check_failed",
+                "hmac_replay_check_skipped",
                 extra={
                     "path": path,
                     "error": str(exc),
                     "correlation_id": request.headers.get(
                         HttpHeader.CORRELATION_ID.value
                     ),
+                    "metric_type": "hmac_verification",
+                    "result": "replay_check_skipped",
                     "fail_open": self._replay_fail_open,
                 },
             )
-            return not self._replay_fail_open
+            return None
 
     def _should_skip(self, path: str) -> bool:
         return path_is_skipped(path, self.skip_paths)

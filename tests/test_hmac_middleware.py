@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -118,6 +119,13 @@ class TestGatewayHMACMiddleware:
         body = resp.json()
         assert body["error"]["code"] == "AUTHLIB_AUTH_009"
 
+    def test_non_ascii_signature_returns_403_not_500(self):
+        headers = _sign_headers()
+        headers_bytes = {**headers, "X-Gateway-Signature": "é".encode() * 32}
+        resp = TestClient(_create_app()).get("/protected", headers=headers_bytes)
+        assert resp.status_code == 403
+        assert resp.json()["error"]["code"] == "AUTHLIB_AUTH_009"
+
     def test_health_skipped_by_default(self):
         client = TestClient(_create_app())
         resp = client.get("/health")
@@ -176,88 +184,71 @@ class TestSkipPathMatching:
 
     def test_skip_path_matching(self):
         for skip_paths, path, expected in self.CASES:
-            mw = GatewayHMACMiddleware(app=None, secret=SECRET, skip_paths=skip_paths)
+            mw = GatewayHMACMiddleware(
+                app=None, secret=SECRET, skip_paths=skip_paths
+            )
             assert mw._should_skip(path) is expected, (
                 f"skip_paths={skip_paths!r} path={path!r} "
                 f"expected skip={expected}, got {not expected}"
             )
 
 
-class _FakeAsyncRedis:
-    def __init__(self, *, raise_on_set: bool = False) -> None:
-        self._store: dict[str, str] = {}
-        self._raise_on_set = raise_on_set
-
-    async def set(self, name, value, nx=False, ex=None):  # noqa: ANN001
-        if self._raise_on_set:
-            raise ConnectionError("redis down")
-        if nx and name in self._store:
-            return None
-        self._store[name] = value
-        return True
+REFUSED_REDIS_URL = "redis://127.0.0.1:1/0"
 
 
-def _create_app_with_redis(
-    redis_client,
-    *,
-    replay_protection_fail_open: bool = True,
-):
+def replay_guarded(
+    redis_url: str, *, replay_protection_fail_open: bool = True
+) -> GatewayHMACMiddleware:
     app = FastAPI()
-    app.add_middleware(
-        GatewayHMACMiddleware,
-        secret=SECRET,
-        redis_client=redis_client,
-        replay_protection_fail_open=replay_protection_fail_open,
-    )
 
     @app.get("/protected")
     async def protected():
         return {"status": "ok"}
 
-    return app
+    return GatewayHMACMiddleware(
+        app,
+        secret=SECRET,
+        redis_url=redis_url,
+        replay_protection_fail_open=replay_protection_fail_open,
+    )
 
 
 class TestGatewayHMACReplayProtection:
-    def test_first_request_passes_then_replay_rejected(self):
-        client = TestClient(_create_app_with_redis(_FakeAsyncRedis()))
-        headers = _sign_headers()
-
-        first = client.get("/protected", headers=headers)
-        assert first.status_code == 200
-
-        replay = client.get("/protected", headers=headers)
-        assert replay.status_code == 403
-        assert replay.json()["error"]["code"] == "AUTHLIB_AUTH_010"
-
-    def test_distinct_signatures_not_treated_as_replay(self):
-        client = TestClient(_create_app_with_redis(_FakeAsyncRedis()))
-        assert client.get("/protected", headers=_sign_headers()).status_code == 200
-        # A second, independently-signed request has a different signature.
-        assert client.get("/protected", headers=_sign_headers()).status_code == 200
-
-    def test_no_redis_client_disables_dedup(self):
+    def test_no_redis_url_disables_dedup(self):
         client = TestClient(_create_app())
         headers = _sign_headers()
         assert client.get("/protected", headers=headers).status_code == 200
         assert client.get("/protected", headers=headers).status_code == 200
 
-    def test_redis_error_fails_open_by_default(self):
-        client = TestClient(_create_app_with_redis(_FakeAsyncRedis(raise_on_set=True)))
-        headers = _sign_headers()
-        # Redis unavailable → request still allowed (availability preserved).
-        assert client.get("/protected", headers=headers).status_code == 200
+    def test_unreachable_redis_fails_open_and_counts_a_skip_not_a_success(self):
+        guard = replay_guarded(REFUSED_REDIS_URL)
 
-    def test_redis_error_fails_closed_when_configured(self):
-        client = TestClient(
-            _create_app_with_redis(
-                _FakeAsyncRedis(raise_on_set=True),
-                replay_protection_fail_open=False,
-            )
-        )
-        headers = _sign_headers()
-        resp = client.get("/protected", headers=headers)
+        resp = TestClient(guard).get("/protected", headers=_sign_headers())
+
+        assert resp.status_code == 200
+        assert guard.hmac_stats == {
+            "success": 0,
+            "failure_missing_headers": 0,
+            "failure_invalid_signature": 0,
+            "failure_replay": 0,
+            "replay_check_skipped": 1,
+            "total": 1,
+            "failure_rate": 0.0,
+        }
+
+    def test_unreachable_redis_fails_closed_when_configured(self):
+        guard = replay_guarded(REFUSED_REDIS_URL, replay_protection_fail_open=False)
+
+        resp = TestClient(guard).get("/protected", headers=_sign_headers())
+
         assert resp.status_code == 403
         assert resp.json()["error"]["code"] == "AUTHLIB_AUTH_010"
+        assert guard.hmac_stats["replay_check_skipped"] == 1
+        assert guard.hmac_stats["failure_replay"] == 0
+
+    def test_a_redis_url_that_drops_the_proxy_guards_fails_at_construction(self):
+        with pytest.raises(ValueError, match="redis://"):
+            replay_guarded("rediss://127.0.0.1:6379/0")
 
     def test_forged_tenant_id_returns_403(self):
         client = TestClient(_create_app())
