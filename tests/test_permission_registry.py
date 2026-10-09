@@ -44,7 +44,6 @@ def test_registry_covers_key_scopes():
         "lead:read",
         "lead:create",
         "lead:update",
-        "lead:delete",
         "lead:assign",
         "lead:claim",
         "lead:note_delete",
@@ -66,6 +65,10 @@ def test_registry_covers_key_scopes():
         "lms:quiz_take",
     ]:
         assert required in names, f"{required} missing from ALL_PERMISSIONS"
+
+
+def test_leads_are_closed_never_deleted():
+    assert "lead:delete" not in permission_names()
 
 
 def test_every_exported_constant_is_in_registry():

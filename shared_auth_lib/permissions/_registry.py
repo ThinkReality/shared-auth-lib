@@ -89,7 +89,6 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(lead.LEAD_VIEW, "Read leads"),
     _d(lead.LEAD_CREATE, "Create leads"),
     _d(lead.LEAD_UPDATE, "Update leads"),
-    _d(lead.LEAD_DELETE, "Delete leads"),
     _d(lead.LEAD_ASSIGN, "Assign leads"),
     _d(lead.LEAD_CLAIM, "Claim leads"),
     _d(lead.LEAD_NOTE_DELETE, "Delete lead notes"),

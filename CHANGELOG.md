@@ -5,6 +5,21 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.56.0] - 2026-10-09
+
+Leads are closed, never deleted. Pins tr-shared-lib v0.87.0.
+
+### Removed
+
+- **`LEAD_DELETE` (`"lead:delete"`)** and its registry entry. Lead-management removed the lead
+  delete route that was its only gate (#141), and no frontend or service code references it. A
+  test pins that the registry carries no lead-delete permission.
+
+**Consumer action:** none in code. tr-crm-core's `sync_permission_catalog` deactivates any
+permission missing from `ALL_PERMISSIONS` on its next run, so `lead:delete` is turned off
+without a role cleanup. Bump both pins together (tr-shared-lib v0.87.0, shared-auth-lib
+v0.56.0).
+
 ## [0.55.0] - 2026-10-07
 
 The HMAC replay check works on every event loop, and a non-ASCII signature is a 403, not a 500.
