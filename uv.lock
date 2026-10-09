@@ -907,7 +907,7 @@ wheels = [
 
 [[package]]
 name = "shared-auth-lib"
-version = "0.56.0"
+version = "0.57.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
@@ -938,7 +938,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "starlette", specifier = ">=0.27.0" },
-    { name = "tr-shared-lib", extras = ["http", "logging", "redis"], git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.87.0" },
+    { name = "tr-shared-lib", extras = ["http", "logging", "redis"], git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.88.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -951,7 +951,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.21.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "ruff", specifier = ">=0.4.0" },
-    { name = "tr-shared-lib", extras = ["monitoring"], git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.87.0" },
+    { name = "tr-shared-lib", extras = ["monitoring"], git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.88.0" },
 ]
 
 [[package]]
@@ -986,8 +986,8 @@ wheels = [
 
 [[package]]
 name = "tr-shared-lib"
-version = "0.87.0"
-source = { git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.87.0#c0b45b3cf0c76dc2926447f127ce7def3b2c6d98" }
+version = "0.88.0"
+source = { git = "https://github.com/ThinkReality/tr-shared-lib.git?tag=v0.88.0#ed79a34a1a35626058c2dd89c6e9070c2064c603" }
 dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },

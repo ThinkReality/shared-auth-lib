@@ -5,6 +5,16 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.57.0] - 2026-10-09
+
+Pins tr-shared-lib v0.88.0 (the swallowed-DB-error guard follows typed calls into project code
+instead of matching names, T-44). No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.88.0, shared-auth-lib v0.57.0).
+The new guard runs in each service's `test_db_errors_reach_the_boundary.py`; the relock adds the
+services' exemptions (people-finance 1, WAM 2, media 1, crm-core 2, realty 2). shared-auth-lib is
+not scanned by that guard.
+
 ## [0.56.0] - 2026-10-09
 
 Leads are closed, never deleted. Pins tr-shared-lib v0.87.0.
