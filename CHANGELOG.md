@@ -5,6 +5,13 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.60.0] - 2026-10-11
+
+Pins tr-shared-lib v0.91.0 (`tr_shared.testing.fixtures.tr_engine` is built by the production engine
+factory, T-46). No code change in this library; it does not use `tr_engine` or `tr_session`.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.91.0, shared-auth-lib v0.60.0).
+
 ## [0.59.0] - 2026-10-11
 
 `install_standard_middleware` installs tr-shared-lib's `UnstorableTextMiddleware` (T-43), inside
