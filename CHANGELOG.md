@@ -5,6 +5,18 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.59.0] - 2026-10-11
+
+`install_standard_middleware` installs tr-shared-lib's `UnstorableTextMiddleware` (T-43), inside
+Identity and outside Idempotency. A request carrying text Postgres cannot store (NUL, lone
+surrogates) in its path, query or JSON/urlencoded body is now a 422 `VALIDATION_ERROR` instead of
+reaching the database as a paged 500. An unsigned request still gets its 401/403 first, and the 422
+never claims an idempotency key. Pins tr-shared-lib v0.90.0.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.90.0, shared-auth-lib v0.59.0). The
+seven factory services get the layer with no code change; tr-api-gateway (no factory) adds it by
+hand in its relock commit.
+
 ## [0.58.0] - 2026-10-11
 
 Pins tr-shared-lib v0.89.0 (log masking removed from `tr_shared.logging`, T-35). No code change in

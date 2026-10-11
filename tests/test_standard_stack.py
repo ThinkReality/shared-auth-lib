@@ -66,6 +66,7 @@ CANONICAL = [
     "LoggingMiddleware",
     "GatewayHMACMiddleware",
     "IdentityExtractionMiddleware",
+    "UnstorableTextMiddleware",
 ]
 
 
@@ -82,11 +83,12 @@ def test_canonical_order_with_every_optional_layer_enabled():
         "RateLimitMiddleware",
         "GatewayHMACMiddleware",
         "IdentityExtractionMiddleware",
+        "UnstorableTextMiddleware",
         "APIIdempotencyMiddleware",
     ]
 
 
-def test_minimal_stack_is_the_canonical_six():
+def test_minimal_stack_is_the_canonical_seven():
     assert order(build()) == CANONICAL
 
 
@@ -151,6 +153,13 @@ def test_idempotency_is_inside_hmac():
     assert names.index("GatewayHMACMiddleware") < names.index(
         "APIIdempotencyMiddleware"
     )
+
+
+def test_unstorable_text_is_judged_after_auth_and_before_an_idempotency_key_is_claimed():
+    names = order(build(idempotency_redis_url="redis://localhost:6379/0"))
+    guard = names.index("UnstorableTextMiddleware")
+    assert names.index("IdentityExtractionMiddleware") < guard
+    assert guard < names.index("APIIdempotencyMiddleware")
 
 
 def test_hmac_redis_url_is_required():
