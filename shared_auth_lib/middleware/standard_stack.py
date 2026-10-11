@@ -18,7 +18,7 @@ re-derived by hand at seven call sites.
 
     extras[OUTERMOST] → CORS → GlobalErrorHandler → CorrelationID → Logging
       → extras[BEFORE_HMAC] → RateLimit → GatewayHMAC → Identity
-      → Idempotency → extras[INNERMOST]
+      → UnstorableText → Idempotency → extras[INNERMOST]
 
 Why each boundary is where it is:
 
@@ -36,6 +36,9 @@ Why each boundary is where it is:
   the key is claimed with SET NX before the request is authenticated, and 4xx
   responses are cached for 24h, so an unsigned request with a guessed key can
   poison it for a day. tr-lead-management shipped it outside.
+* **UnstorableText inside Identity, outside Idempotency** — an unsigned caller
+  gets its 401/403 before its body is judged, and a 422 for text Postgres
+  cannot store (NUL, lone surrogates) never claims an idempotency key.
 
 **`setup_monitoring` must be called BEFORE this function.** It installs
 `MetricsMiddleware`, and calling it first puts metrics innermost, so the
@@ -54,6 +57,7 @@ from tr_shared.middleware import (
     CorrelationIDMiddleware,
     GlobalErrorHandlerMiddleware,
     LoggingMiddleware,
+    UnstorableTextMiddleware,
 )
 
 from shared_auth_lib.middleware.hmac_middleware import GatewayHMACMiddleware
@@ -166,6 +170,7 @@ def install_standard_middleware(
             service_name=service_name,
         )
 
+    add(UnstorableTextMiddleware)
     add(IdentityExtractionMiddleware)
 
     hmac_kwargs: dict[str, Any] = {
