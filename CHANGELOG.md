@@ -5,6 +5,29 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.61.0] - 2026-10-12
+
+The HMAC replay check always fails closed (T-37). Pins tr-shared-lib v0.91.0.
+
+### Changed (BREAKING)
+
+- **An unreachable replay store answers 503 `AUTHLIB_SERVICE_UNAVAILABLE_002` with
+  `Retry-After`.** It used to let the signed request through unchecked (the default) or, with
+  `replay_protection_fail_open=False`, answer 403 `AUTHLIB_AUTH_010`, the same code as a real
+  replay. The body is rendered by `tr_shared.middleware.exception_handlers.base_api_exception_handler`
+  from a `ServiceUnavailableError`, so it carries the request's correlation id and the same shape
+  as `AUTHLIB_SERVICE_UNAVAILABLE_001`. `Retry-After` is `UNAVAILABLE_RETRY_AFTER_SECONDS`.
+- **`replay_protection_fail_open` is removed** from `GatewayHMACMiddleware` and
+  `install_standard_middleware`. Passing it raises `TypeError` at startup.
+- **`hmac_stats["replay_check_skipped"]` is renamed `failure_replay_store_unavailable`** and now
+  counts toward `failure_rate`. The log event `hmac_replay_check_skipped` is renamed
+  `hmac_replay_store_unavailable`.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.91.0, shared-auth-lib v0.61.0).
+tr-whatsApp-marketing-agent drops `replay_protection_fail_open=False` from `app/main.py` and
+deletes `tests/integration/api/test_replay_protection_fail_closed.py`. A test that sends a signed
+request now needs a reachable Redis, so it belongs in the integration lane.
+
 ## [0.60.0] - 2026-10-11
 
 Pins tr-shared-lib v0.91.0 (`tr_shared.testing.fixtures.tr_engine` is built by the production engine

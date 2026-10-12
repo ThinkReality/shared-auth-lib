@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from tr_shared.contracts import UNAVAILABLE_RETRY_AFTER_SECONDS
 
 from shared_auth_lib.middleware.hmac_middleware import (
     GatewayHMACMiddleware,
@@ -196,21 +197,14 @@ class TestSkipPathMatching:
 REFUSED_REDIS_URL = "redis://127.0.0.1:1/0"
 
 
-def replay_guarded(
-    redis_url: str, *, replay_protection_fail_open: bool = True
-) -> GatewayHMACMiddleware:
+def replay_guarded(redis_url: str) -> GatewayHMACMiddleware:
     app = FastAPI()
 
     @app.get("/protected")
     async def protected():
         return {"status": "ok"}
 
-    return GatewayHMACMiddleware(
-        app,
-        secret=SECRET,
-        redis_url=redis_url,
-        replay_protection_fail_open=replay_protection_fail_open,
-    )
+    return GatewayHMACMiddleware(app, secret=SECRET, redis_url=redis_url)
 
 
 class TestGatewayHMACReplayProtection:
@@ -220,31 +214,23 @@ class TestGatewayHMACReplayProtection:
         assert client.get("/protected", headers=headers).status_code == 200
         assert client.get("/protected", headers=headers).status_code == 200
 
-    def test_unreachable_redis_fails_open_and_counts_a_skip_not_a_success(self):
+    def test_unreachable_redis_answers_503_and_counts_a_failure(self):
         guard = replay_guarded(REFUSED_REDIS_URL)
 
         resp = TestClient(guard).get("/protected", headers=_sign_headers())
 
-        assert resp.status_code == 200
+        assert resp.status_code == 503
+        assert resp.json()["error"]["code"] == "AUTHLIB_SERVICE_UNAVAILABLE_002"
+        assert resp.headers["retry-after"] == str(UNAVAILABLE_RETRY_AFTER_SECONDS)
         assert guard.hmac_stats == {
             "success": 0,
             "failure_missing_headers": 0,
             "failure_invalid_signature": 0,
             "failure_replay": 0,
-            "replay_check_skipped": 1,
+            "failure_replay_store_unavailable": 1,
             "total": 1,
-            "failure_rate": 0.0,
+            "failure_rate": 100.0,
         }
-
-    def test_unreachable_redis_fails_closed_when_configured(self):
-        guard = replay_guarded(REFUSED_REDIS_URL, replay_protection_fail_open=False)
-
-        resp = TestClient(guard).get("/protected", headers=_sign_headers())
-
-        assert resp.status_code == 403
-        assert resp.json()["error"]["code"] == "AUTHLIB_AUTH_010"
-        assert guard.hmac_stats["replay_check_skipped"] == 1
-        assert guard.hmac_stats["failure_replay"] == 0
 
     def test_a_redis_url_that_drops_the_proxy_guards_fails_at_construction(self):
         with pytest.raises(ValueError, match="redis://"):

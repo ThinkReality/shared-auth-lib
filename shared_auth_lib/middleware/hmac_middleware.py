@@ -8,7 +8,10 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
+from tr_shared.contracts import UNAVAILABLE_RETRY_AFTER_SECONDS
 from tr_shared.contracts.headers import HttpHeader
+from tr_shared.exceptions import ServiceUnavailableError
+from tr_shared.middleware.exception_handlers import base_api_exception_handler
 from tr_shared.redis.connection import require_plain_redis_url
 from tr_shared.redis.pool import build_connection_pool
 from tr_shared.schemas import build_error_envelope
@@ -86,7 +89,6 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         tolerance_seconds: int = 30,
         dev_mode_bypass: bool | None = None,
         redis_url: str | None = None,
-        replay_protection_fail_open: bool = True,
     ) -> None:
         super().__init__(app)
         self.secret = secret
@@ -98,7 +100,6 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             require_plain_redis_url(redis_url)
         self._redis_url = redis_url
         self._replay_client: tuple[asyncio.AbstractEventLoop, Redis] | None = None
-        self._replay_fail_open = replay_protection_fail_open
         if dev_mode_bypass is None:
             from shared_auth_lib.config import get_settings
 
@@ -118,7 +119,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         self._hmac_failure_missing: int = 0
         self._hmac_failure_invalid: int = 0
         self._hmac_failure_replay: int = 0
-        self._replay_check_skipped: int = 0
+        self._hmac_failure_replay_store_unavailable: int = 0
 
     @property
     def hmac_stats(self) -> dict:
@@ -127,22 +128,19 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             + self._hmac_failure_missing
             + self._hmac_failure_invalid
             + self._hmac_failure_replay
-            + self._replay_check_skipped
+            + self._hmac_failure_replay_store_unavailable
         )
         failure_rate = 0.0
         if total > 0:
-            failures = (
-                self._hmac_failure_missing
-                + self._hmac_failure_invalid
-                + self._hmac_failure_replay
-            )
-            failure_rate = (failures / total) * 100
+            failure_rate = ((total - self._hmac_success) / total) * 100
         return {
             "success": self._hmac_success,
             "failure_missing_headers": self._hmac_failure_missing,
             "failure_invalid_signature": self._hmac_failure_invalid,
             "failure_replay": self._hmac_failure_replay,
-            "replay_check_skipped": self._replay_check_skipped,
+            "failure_replay_store_unavailable": (
+                self._hmac_failure_replay_store_unavailable
+            ),
             "total": total,
             "failure_rate": round(failure_rate, 2),
         }
@@ -217,13 +215,14 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         if self._redis_url is not None:
             first_sighting = await self._claim_signature(signature, path, request)
             if first_sighting is None:
-                self._replay_check_skipped += 1
-                if self._replay_fail_open:
-                    return await call_next(request)
-                return _rejected(
+                self._hmac_failure_replay_store_unavailable += 1
+                return await base_api_exception_handler(
                     request,
-                    "Replay protection unavailable",
-                    "AUTHLIB_AUTH_010",
+                    ServiceUnavailableError(
+                        detail="Replay protection unavailable",
+                        code="AUTHLIB_SERVICE_UNAVAILABLE_002",
+                        retry_after=UNAVAILABLE_RETRY_AFTER_SECONDS,
+                    ),
                 )
             if not first_sighting:
                 self._hmac_failure_replay += 1
@@ -272,7 +271,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             )
         except Exception as exc:
             logger.warning(
-                "hmac_replay_check_skipped",
+                "hmac_replay_store_unavailable",
                 extra={
                     "path": path,
                     "error": str(exc),
@@ -280,8 +279,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
                         HttpHeader.CORRELATION_ID.value
                     ),
                     "metric_type": "hmac_verification",
-                    "result": "replay_check_skipped",
-                    "fail_open": self._replay_fail_open,
+                    "result": "failure_replay_store_unavailable",
                 },
             )
             return None

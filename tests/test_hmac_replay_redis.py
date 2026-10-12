@@ -35,7 +35,7 @@ def test_a_signature_replayed_on_another_event_loop_is_rejected():
     assert (first, replay) == (200, 403)
     assert guard.hmac_stats["success"] == 1
     assert guard.hmac_stats["failure_replay"] == 1
-    assert guard.hmac_stats["replay_check_skipped"] == 0
+    assert guard.hmac_stats["failure_replay_store_unavailable"] == 0
 
 
 def test_distinct_signatures_are_not_replays():

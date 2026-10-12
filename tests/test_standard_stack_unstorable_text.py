@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 
 import pytest
 from fastapi import FastAPI
@@ -21,6 +22,14 @@ class _Role(BaseModel):
     description: str
 
 
+@pytest.fixture
+def replay_store() -> str:
+    url = os.getenv("TEST_REDIS_URL")
+    if not url:
+        pytest.skip("TEST_REDIS_URL not set — a signed request needs a replay store")
+    return url
+
+
 @pytest.fixture(autouse=True)
 def _signing_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("AUTH_LIB_GATEWAY_SIGNING_SECRET", SECRET)
@@ -30,7 +39,7 @@ def _signing_env(monkeypatch: pytest.MonkeyPatch):
     _AuthClientRegistry.reset()
 
 
-def _app() -> FastAPI:
+def _app(redis_url: str = REFUSING_REDIS) -> FastAPI:
     app = FastAPI()
 
     @app.post("/api/v1/roles")
@@ -44,13 +53,18 @@ def _app() -> FastAPI:
         cors=None,
         hmac_secret=SECRET,
         hmac_skip_paths=["/api/v1/health"],
-        hmac_redis_url=REFUSING_REDIS,
+        hmac_redis_url=redis_url,
     )
     return app
 
 
-async def test_a_signed_request_with_unstorable_text_is_a_correlated_422() -> None:
-    async with asyncio.timeout(10), async_signed_client(_app(), Persona()) as client:
+async def test_a_signed_request_with_unstorable_text_is_a_correlated_422(
+    replay_store: str,
+) -> None:
+    async with (
+        asyncio.timeout(10),
+        async_signed_client(_app(replay_store), Persona()) as client,
+    ):
         response = await client.post("/api/v1/roles", content=NUL_BODY, headers=JSON)
 
     assert response.status_code == 422, response.text
@@ -71,8 +85,13 @@ async def test_an_unsigned_request_meets_auth_before_its_text_is_judged() -> Non
     assert response.status_code == 403, response.text
 
 
-async def test_a_signed_clean_body_still_reaches_the_route() -> None:
-    async with asyncio.timeout(10), async_signed_client(_app(), Persona()) as client:
+async def test_a_signed_clean_body_still_reaches_the_route(
+    replay_store: str,
+) -> None:
+    async with (
+        asyncio.timeout(10),
+        async_signed_client(_app(replay_store), Persona()) as client,
+    ):
         response = await client.post(
             "/api/v1/roles", json={"description": "night \U0001f319"}
         )
