@@ -17,9 +17,12 @@ from typing import Any
 
 import pytest
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from shared_auth_lib.middleware import Slot, install_standard_middleware
+from tests.test_hmac_middleware import REFUSED_REDIS_URL, _sign_headers
+from tests.test_hmac_middleware import SECRET as SIGNING_SECRET
 
 SECRET = "test-secret"
 
@@ -259,50 +262,6 @@ def test_skip_paths_accepts_a_set():
     assert set(passed) == {"/api/v1/health", "/docs"}
 
 
-# `replay_protection_fail_open` is accepted by `GatewayHMACMiddleware.__init__`
-# but was never forwarded here. Since this factory is the mandated entry point
-# and no service constructs the middleware directly, the flag was unreachable
-# fleet-wide: every service ran fail-open, so an unreachable Redis silently
-# disabled replay protection with nothing logged at the call site.
-
-
-def test_replay_fail_open_default_is_left_to_the_library():
-    """Omitted must mean "the library's default", not a second copy of `True`.
-
-    On its own this passes against the unfixed factory too — a dropped
-    parameter also leaves the key absent. It documents the SSOT; the two
-    tests below are what actually fail without the fix.
-    """
-    assert "replay_protection_fail_open" not in kwargs_for(
-        build(), "GatewayHMACMiddleware"
-    )
-
-
-def test_replay_fail_open_is_forwarded_when_given():
-    app = build(replay_protection_fail_open=False)
-    passed = kwargs_for(app, "GatewayHMACMiddleware")
-    assert passed["replay_protection_fail_open"] is False
-
-
-def test_the_forwarded_replay_flag_reaches_the_middleware_instance():
-    """Asserting the recorded kwargs is not enough: Starlette stores whatever
-    key it is handed, so a misspelled one reads as forwarded here and then
-    raises TypeError at app startup. Building the real stack instantiates
-    `GatewayHMACMiddleware` with those kwargs, which is what proves the name
-    is one the class actually accepts."""
-    app = build(replay_protection_fail_open=False)
-    app.build_middleware_stack()
-
-    installed = [
-        m for m in app.user_middleware if m.cls.__name__ == "GatewayHMACMiddleware"
-    ]
-    assert len(installed) == 1
-    hmac = installed[0].cls(app=None, **installed[0].kwargs)
-    assert hmac._replay_fail_open is False, (
-        "the flag was accepted but did not become the instance's posture"
-    )
-
-
 def test_the_hmac_redis_url_reaches_the_middleware_instance():
     app = build(hmac_redis_url="redis://cache:6379/3")
 
@@ -311,3 +270,16 @@ def test_the_hmac_redis_url_reaches_the_middleware_instance():
     ]
     hmac = installed[0].cls(app=None, **installed[0].kwargs)
     assert hmac._redis_url == "redis://cache:6379/3"
+
+
+def test_a_replay_store_outage_answers_503_with_the_requests_correlation_id():
+    app = build(hmac_secret=SIGNING_SECRET, hmac_redis_url=REFUSED_REDIS_URL)
+
+    @app.get("/protected")
+    async def protected():
+        return {"status": "ok"}
+
+    resp = TestClient(app).get("/protected", headers=_sign_headers())
+
+    assert resp.status_code == 503
+    assert resp.json()["error"]["correlation_id"] == resp.headers["x-correlation-id"]
