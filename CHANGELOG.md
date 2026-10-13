@@ -5,6 +5,13 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.62.0] - 2026-10-13
+
+Pins tr-shared-lib v0.92.0 (`listing_internal.listing_owners_batch()` S2S contract, Phase R5). No code change
+in this library; it does not use the listing contracts.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.92.0, shared-auth-lib v0.62.0).
+
 ## [0.61.0] - 2026-10-12
 
 The HMAC replay check always fails closed (T-37). Pins tr-shared-lib v0.91.0.
