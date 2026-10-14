@@ -5,6 +5,13 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.63.0] - 2026-10-14
+
+Pins tr-shared-lib v0.93.0 (the testing plugin no longer clones an unused database for the pytest-xdist
+controller; item 16). No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.93.0, shared-auth-lib v0.63.0).
+
 ## [0.62.0] - 2026-10-13
 
 Pins tr-shared-lib v0.92.0 (`listing_internal.listing_owners_batch()` S2S contract, Phase R5). No code change
