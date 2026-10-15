@@ -5,6 +5,13 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.65.0] - 2026-10-15
+
+Pins tr-shared-lib v0.94.2 (the test plugin's Postgres counts as ready only once its final server is up; a cold
+Supabase container could otherwise kill the first statement). No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.94.2, shared-auth-lib v0.65.0).
+
 ## [0.64.0] - 2026-10-15
 
 Pins tr-shared-lib v0.94.1 (the test plugin runs on `supabase/postgres:17.6.1.178` as the non-superuser `postgres`
