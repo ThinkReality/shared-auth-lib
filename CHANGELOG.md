@@ -5,6 +5,13 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.64.0] - 2026-10-15
+
+Pins tr-shared-lib v0.94.1 (the test plugin runs on `supabase/postgres:17.6.1.178` as the non-superuser `postgres`
+role with staging's extension layout and real Vault; item 15). No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.94.1, shared-auth-lib v0.64.0).
+
 ## [0.63.0] - 2026-10-14
 
 Pins tr-shared-lib v0.93.0 (the testing plugin no longer clones an unused database for the pytest-xdist
