@@ -5,6 +5,13 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.68.0] - 2026-10-16
+
+Pins tr-shared-lib v0.97.0. `GatewayHMACMiddleware` gets its replay client from `tr_shared.redis.LoopBoundRedis`
+instead of its own copy of the same per-event-loop logic. Behaviour is unchanged.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.97.0, shared-auth-lib v0.68.0).
+
 ## [0.67.0] - 2026-10-16
 
 Pins tr-shared-lib v0.96.0 (`tr_shared.testing.roundtrip_database`). No code change in this library.
