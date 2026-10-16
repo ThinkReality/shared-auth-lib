@@ -120,6 +120,7 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
     _d(hr.HR_RECRUITMENT_POSTING_CREATE, "Create job postings"),
     _d(hr.HR_RECRUITMENT_POSTING_PUBLISH, "Publish job postings"),
     _d(hr.HR_RECRUITMENT_POSTING_UPDATE, "Update job postings"),
+    _d(hr.HR_RECRUITMENT_POSTING_DELETE, "Delete job postings"),
     # finance
     _d(finance.FINANCE_VIEW, "Read finance"),
     _d(finance.FINANCE_WRITE, "Write finance"),
@@ -169,3 +170,14 @@ ALL_PERMISSIONS: tuple[PermissionDef, ...] = (
 
 def permission_names() -> frozenset[str]:
     return frozenset(p.name for p in ALL_PERMISSIONS)
+
+
+_PERMISSION_NAMES = permission_names()
+
+
+def validate_permission(name: str) -> str:
+    if name not in _PERMISSION_NAMES:
+        raise ValueError(
+            f"Unknown permission {name!r}; add it to shared_auth_lib.permissions"
+        )
+    return name

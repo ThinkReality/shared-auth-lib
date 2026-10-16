@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from shared_auth_lib.constants.roles import SystemRole
 from shared_auth_lib.models.auth_context import (
     AuthContext,
     GatewayIdentityHeaders,
@@ -18,7 +19,7 @@ class TestAuthContext:
             email="test@thinkrealty.ae",
             tenant_id=uuid4(),
             roles=["admin", "sales_agent"],
-            permissions=["user:read", "listing:create"],
+            permissions=["lead:read", "listing:create"],
             is_active=True,
             is_suspended=False,
         )
@@ -27,11 +28,11 @@ class TestAuthContext:
 
     def test_has_permission_true(self):
         ctx = self._make_context()
-        assert ctx.has_permission("user:read") is True
+        assert ctx.has_permission("lead:read") is True
 
     def test_has_permission_false(self):
         ctx = self._make_context()
-        assert ctx.has_permission("user:delete") is False
+        assert ctx.has_permission("lead:update") is False
 
     def test_has_role_is_gone(self):
         """v0.16.0 removed `has_role`, which widened role checks via the
@@ -46,17 +47,17 @@ class TestAuthContext:
     def test_role_hierarchy_on_the_wire_is_ignored_not_honoured(self):
         """An older producer still sending the field must not resurrect widening."""
         ctx = self._make_context(roles=["sales_agent"], role_hierarchy=["super_admin"])
-        assert ctx.has_any_role(["super_admin"]) is False
+        assert ctx.has_any_role([SystemRole.SUPER_ADMIN]) is False
         assert ctx.roles == ["sales_agent"]
 
     def test_has_any_role_true(self):
         ctx = self._make_context()
-        assert ctx.has_any_role(["sales_lead", "admin"]) is True
+        assert ctx.has_any_role([SystemRole.ADMIN]) is True
 
     def test_has_any_role_false(self):
         ctx = self._make_context(roles=["sales_agent"])
         assert (
-            ctx.has_any_role(["super_admin", "owner"]) is False
+            ctx.has_any_role([SystemRole.SUPER_ADMIN]) is False
         )
 
     def test_ensure_list_validator_with_none(self):

@@ -61,6 +61,7 @@ def test_registry_covers_key_scopes():
         "finance:expenses:read",
         "hr:attendance_read",
         "recruitment:posting:create",
+        "recruitment:posting:delete",
         "listing:metrics:read",
         "lms:quiz_take",
     ]:

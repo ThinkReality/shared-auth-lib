@@ -60,7 +60,7 @@ def _app() -> FastAPI:
 
     @app.get("/api/v1/invoices")
     async def invoices(
-        auth: AuthContext = Depends(require_permission("finance:invoice:read")),
+        auth: AuthContext = Depends(require_permission("finance:invoices:read")),
     ):
         return {"ok": True}
 
@@ -105,15 +105,15 @@ class TestTheChainActuallyRuns:
 
 class TestPersonaDrivesAuthorization:
     async def test_permission_granted(self) -> None:
-        persona = Persona(permissions=("finance:invoice:read",))
+        persona = Persona(permissions=("finance:invoices:read",))
         async with async_signed_client(_app(), persona) as client:
             response = await client.get("/api/v1/invoices")
         assert response.status_code == 200
 
     async def test_permission_withheld_is_403_through_the_real_dependency(self) -> None:
-        persona = Persona(permissions=("finance:invoice:read", "finance:invoice:write"))
+        persona = Persona(permissions=("finance:invoices:read", "finance:invoices:write"))
         async with async_signed_client(
-            _app(), persona.without("finance:invoice:read")
+            _app(), persona.without("finance:invoices:read")
         ) as client:
             response = await client.get("/api/v1/invoices")
 

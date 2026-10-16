@@ -12,7 +12,7 @@ from tr_shared.exceptions import (
     ServiceUnavailableError,
 )
 
-from shared_auth_lib.constants.roles import SystemRole
+from shared_auth_lib.constants.roles import SystemRole, validate_system_roles
 from shared_auth_lib.exceptions import (
     AuthContextNotFoundError,
     AuthContextUnavailableError,
@@ -25,6 +25,7 @@ from shared_auth_lib.models.auth_context import (
     AuthContext,
     GatewayIdentityHeaders,
 )
+from shared_auth_lib.permissions._registry import validate_permission
 
 
 class AuthContextProvider(Protocol):
@@ -254,6 +255,7 @@ def require_permission(
     dependency that merely closes over a vocabulary string without setting
     this attribute is never mistaken for an auth gate.
     """
+    validate_permission(permission)
 
     async def _checker(
         auth_context: AuthContext = Depends(require_auth),
@@ -280,20 +282,6 @@ def require_permission(
     return _checker
 
 
-def _validate_role(role: SystemRole | str) -> str:
-    """Normalize a role arg to its string value, rejecting non-SystemRole
-    values at dependency-construction time (router registration), not at request
-    time. Role-name gates may reference ONLY the two system roles — feature
-    access is permission-based (require_permission)."""
-    try:
-        return str(SystemRole(str(role)))
-    except ValueError as exc:
-        valid = ", ".join(r.value for r in SystemRole)
-        raise ValueError(
-            f"Unknown role {role!r}; must be a SystemRole. Valid: {valid}"
-        ) from exc
-
-
 # `require_role(role)` was removed in v0.16.0. It resolved through
 # AuthContext.has_role, which widened via role_hierarchy, and it had no callers
 # anywhere in the fleet — every service already used require_any_role. Use
@@ -301,7 +289,7 @@ def _validate_role(role: SystemRole | str) -> str:
 
 
 def require_any_role(
-    roles: list[SystemRole | str],
+    roles: list[SystemRole],
 ) -> Callable[..., Awaitable[AuthContext]]:
     """Dependency factory: require any of the specified SystemRoles.
 
@@ -310,7 +298,7 @@ def require_any_role(
     ``require_permission`` for why this is the sole hook the route-surface
     guard reads.
     """
-    roles = [_validate_role(r) for r in roles]
+    roles = validate_system_roles(roles)
 
     async def _checker(
         auth_context: AuthContext = Depends(require_auth),

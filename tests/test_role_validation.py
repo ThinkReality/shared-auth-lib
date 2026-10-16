@@ -7,39 +7,47 @@ validation it carried lives on in `require_any_role`, which is the only
 role-gating dependency now.
 """
 
+from uuid import uuid4
+
 import pytest
 
 from shared_auth_lib.constants.roles import SystemRole
 from shared_auth_lib.dependencies.auth_dependencies import require_any_role
+from shared_auth_lib.models.auth_context import AuthContext
 
 
-def test_require_any_role_accepts_systemrole():
-    require_any_role([SystemRole.ADMIN])
-
-
-def test_require_any_role_accepts_valid_string():
-    require_any_role(["admin"])
-
-
-def test_require_any_role_accepts_super_admin():
-    require_any_role([SystemRole.SUPER_ADMIN])
-    require_any_role(["super_admin"])
+def _ctx(roles: list[str]) -> AuthContext:
+    return AuthContext(
+        external_auth_id=uuid4(),
+        user_id=uuid4(),
+        email="u@x.com",
+        tenant_id=uuid4(),
+        roles=roles,
+    )
 
 
 def test_require_any_role_accepts_system_roles():
-    require_any_role([SystemRole.SUPER_ADMIN, SystemRole.ADMIN])
+    gate = require_any_role([SystemRole.SUPER_ADMIN, SystemRole.ADMIN])
+    assert gate._required_permissions == ("super_admin", "admin")
 
 
-def test_require_any_role_rejects_unknown_string():
-    with pytest.raises(ValueError, match="manager"):
-        require_any_role(["manager"])
+@pytest.mark.parametrize("role", ["admin", "manager"])
+def test_require_any_role_rejects_a_bare_string(role):
+    with pytest.raises(TypeError, match=repr(role)):
+        require_any_role([SystemRole.ADMIN, role])
 
 
-def test_require_any_role_rejects_bad_entry():
-    with pytest.raises(ValueError, match="manager"):
-        require_any_role(["admin", "manager"])
+@pytest.mark.parametrize("role", ["admin", "manager"])
+def test_has_any_role_rejects_a_bare_string(role):
+    with pytest.raises(TypeError, match=repr(role)):
+        _ctx(["admin"]).has_any_role([role])
 
 
-def test_error_names_valid_set():
-    with pytest.raises(ValueError, match="super_admin, admin"):
+def test_has_any_role_matches_a_held_system_role():
+    assert _ctx(["sales_agent", "admin"]).has_any_role([SystemRole.ADMIN]) is True
+    assert _ctx(["sales_agent"]).has_any_role(list(SystemRole)) is False
+
+
+def test_error_names_the_members():
+    with pytest.raises(TypeError, match="SystemRole.SUPER_ADMIN, SystemRole.ADMIN"):
         require_any_role(["manager"])
