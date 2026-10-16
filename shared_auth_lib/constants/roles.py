@@ -13,6 +13,7 @@ The one intra-tenant distinction: only a ``super_admin`` may assign the
 ``super_admin`` role.
 """
 
+from collections.abc import Iterable
 from enum import StrEnum
 
 
@@ -25,3 +26,14 @@ class SystemRole(StrEnum):
 # WITHIN the caller's own tenant — never control-plane or cross-tenant access.
 # Replaces the old ADMIN_ROLES (which wrongly included the now-dynamic MANAGER).
 SYSTEM_ROLES: frozenset[SystemRole] = frozenset(SystemRole)
+
+
+def validate_system_roles(roles: Iterable[SystemRole]) -> list[SystemRole]:
+    roles = list(roles)
+    strays = [role for role in roles if not isinstance(role, SystemRole)]
+    if strays:
+        members = ", ".join(f"SystemRole.{role.name}" for role in SystemRole)
+        raise TypeError(
+            f"Roles must be SystemRole members ({members}), got {strays!r}"
+        )
+    return roles

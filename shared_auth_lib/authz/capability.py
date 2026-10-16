@@ -16,6 +16,7 @@ from tr_shared.exceptions import AuthorizationError
 
 from shared_auth_lib.dependencies.auth_dependencies import require_auth
 from shared_auth_lib.models.auth_context import AuthContext
+from shared_auth_lib.permissions._registry import validate_permission
 
 
 def can(ctx: AuthContext, permission: str, resource: Any = None) -> bool:
@@ -35,6 +36,7 @@ def require_capability(
     Raises ``tr_shared.exceptions.AuthorizationError`` (403) on deny, so the
     GlobalErrorHandler renders the standard structured error body.
     """
+    validate_permission(permission)
 
     async def _checker(
         auth_context: AuthContext = Depends(require_auth),

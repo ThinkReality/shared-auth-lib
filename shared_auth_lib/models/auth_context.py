@@ -3,6 +3,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from shared_auth_lib.constants.roles import SystemRole, validate_system_roles
+from shared_auth_lib.permissions._registry import validate_permission
+
 
 def _grant_matches(granted: str, required: str) -> bool:
     # Trailing colon kept in prefix so ``lead:*`` does NOT match ``leads:read``.
@@ -49,9 +52,9 @@ class AuthContext(BaseModel):
 
     def has_permission(self, permission: str) -> bool:
         """Single platform-wide matcher — delegates to permission_granted (wildcard-aware)."""
-        return permission_granted(self.permissions, permission)
+        return permission_granted(self.permissions, validate_permission(permission))
 
-    def has_any_role(self, roles: list[str]) -> bool:
+    def has_any_role(self, roles: list[SystemRole]) -> bool:
         """Exact membership: True if any of ``roles`` is DIRECTLY held.
 
         The ONLY role check on AuthContext, deliberately. There was also a
@@ -68,7 +71,7 @@ class AuthContext(BaseModel):
         permission-based (``has_permission`` / ``require_permission``); this
         check exists only for intra-tenant role-assignment rules.
         """
-        return any(role in self.roles for role in roles)
+        return any(role in self.roles for role in validate_system_roles(roles))
 
 
 class GatewayIdentityHeaders(BaseModel):

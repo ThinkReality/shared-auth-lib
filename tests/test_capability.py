@@ -21,30 +21,30 @@ def _ctx(permissions: list[str]) -> AuthContext:
 
 
 def test_can_delegates_to_has_permission():
-    ctx = _ctx(["lead:edit"])
-    assert can(ctx, "lead:edit") is True
-    assert can(ctx, "lead:delete") is False
+    ctx = _ctx(["lead:update"])
+    assert can(ctx, "lead:update") is True
+    assert can(ctx, "lead:assign") is False
 
 
 def test_can_accepts_and_ignores_resource_today():
-    ctx = _ctx(["lead:edit"])
-    assert can(ctx, "lead:edit", resource={"owner_id": "someone"}) is True
+    ctx = _ctx(["lead:update"])
+    assert can(ctx, "lead:update", resource={"owner_id": "someone"}) is True
 
 
 def test_can_honours_wildcard_permission():
     ctx = _ctx(["*"])
-    assert can(ctx, "anything:goes") is True
+    assert can(ctx, "lead:read") is True
 
 
 async def test_require_capability_allows_with_permission():
-    ctx = _ctx(["lead:edit"])
-    checker = require_capability("lead:edit")
+    ctx = _ctx(["lead:update"])
+    checker = require_capability("lead:update")
     assert await checker(auth_context=ctx) is ctx
 
 
 async def test_require_capability_denies_without_permission():
     ctx = _ctx([])
-    checker = require_capability("lead:edit")
+    checker = require_capability("lead:update")
     with pytest.raises(AuthorizationError) as exc:
         await checker(auth_context=ctx)
     assert exc.value.status_code == 403

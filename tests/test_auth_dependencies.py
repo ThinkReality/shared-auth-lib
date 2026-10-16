@@ -12,6 +12,7 @@ from tr_shared.contracts import UNAVAILABLE_RETRY_AFTER_SECONDS
 from tr_shared.middleware import register_exception_handlers
 from tr_shared.schemas import build_error_envelope
 
+from shared_auth_lib.constants.roles import SystemRole
 from shared_auth_lib.dependencies.auth_dependencies import (
     AuthContextProvider,
     get_auth_context_client,
@@ -86,13 +87,15 @@ def _create_app(provider: AuthContextProvider) -> FastAPI:
 
     @app.get("/require-missing-permission")
     async def route_require_missing_permission(
-        auth: AuthContext = Depends(require_permission("user:delete")),
+        auth: AuthContext = Depends(require_permission("auth:user:manage")),
     ):
         return {"user_id": str(auth.user_id)}
 
     @app.get("/require-any-role")
     async def route_require_any_role(
-        auth: AuthContext = Depends(require_any_role(["super_admin", "admin"])),
+        auth: AuthContext = Depends(
+            require_any_role([SystemRole.SUPER_ADMIN, SystemRole.ADMIN])
+        ),
     ):
         return {"user_id": str(auth.user_id)}
 
@@ -188,7 +191,7 @@ class TestRequirePermission:
         # The reason is machine-identifiable by code now; the permission name
         # stays in detail so an operator reading a log still sees which one.
         assert resp.json()["error"]["code"] == "AUTHLIB_AUTH_005"
-        assert "user:delete" in resp.json()["error"]["detail"]
+        assert "auth:user:manage" in resp.json()["error"]["detail"]
 
 
 class TestRequireRoleIsGone:

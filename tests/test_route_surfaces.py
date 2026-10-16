@@ -13,7 +13,12 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, FastAPI, Request, WebSocket
 import pytest
 
-from shared_auth_lib import require_any_role, require_auth, require_permission
+from shared_auth_lib import (
+    SystemRole,
+    require_any_role,
+    require_auth,
+    require_permission,
+)
 from shared_auth_lib.middleware.hmac_middleware import path_is_skipped
 from shared_auth_lib.permissions._registry import permission_names
 from shared_auth_lib.testing import (
@@ -139,7 +144,8 @@ def test_require_any_role_is_business():
     r = APIRouter()
 
     @r.get(
-        "/api/v1/users", dependencies=[Depends(require_any_role(["super_admin"]))]
+        "/api/v1/users",
+        dependencies=[Depends(require_any_role([SystemRole.SUPER_ADMIN]))],
     )
     async def users() -> dict:
         return {}

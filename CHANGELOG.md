@@ -5,6 +5,22 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.69.0] - 2026-10-16
+
+Roles and permissions are checked against their single source when a check is built or run, so every service is
+covered without a per-service drift test.
+
+- **Breaking:** `require_any_role` and `AuthContext.has_any_role` accept only `SystemRole` members. A bare string,
+  even a valid one like `"admin"`, raises `TypeError`. `SYSTEM_ROLES` is the list to pass for "any system role".
+- **Breaking:** `require_permission`, `require_capability` and `AuthContext.has_permission` raise `ValueError` for a
+  name that is not in `ALL_PERMISSIONS`. The factories raise at construction, so a typo fails at import, not as a
+  permanent 403. `permission_granted` stays a plain matcher and accepts any name.
+- Adds `HR_RECRUITMENT_POSTING_DELETE` (`recruitment:posting:delete`). tr-people-finance gated a route on it while it
+  was missing from the catalog, so the route returned 403 for every caller.
+
+**Consumer action:** pin shared-auth-lib v0.69.0 (tr-shared-lib stays v0.97.0). Pass `SystemRole` members, not
+strings, to role checks. Delete `tests/architecture/test_phase_g_role_drift.py`.
+
 ## [0.68.0] - 2026-10-16
 
 Pins tr-shared-lib v0.97.0. `GatewayHMACMiddleware` gets its replay client from `tr_shared.redis.LoopBoundRedis`

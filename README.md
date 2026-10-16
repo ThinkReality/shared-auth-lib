@@ -65,11 +65,12 @@ from fastapi import Depends
 from shared_auth_lib import (
     AuthContext,
     require_auth,
+    SYSTEM_ROLES,
     require_permission,
-    require_role,
     require_any_role,
     optional_auth,
 )
+from shared_auth_lib.permissions import LISTING_DELETE
 
 @router.get("/listings")
 async def list_listings(
@@ -80,13 +81,13 @@ async def list_listings(
 
 @router.delete("/listings/{id}")
 async def delete_listing(
-    auth: AuthContext = Depends(require_permission("listing:delete")),
+    auth: AuthContext = Depends(require_permission(LISTING_DELETE)),
 ):
     ...
 
 @router.get("/admin/users")
 async def admin_users(
-    auth: AuthContext = Depends(require_role("ADMIN")),
+    auth: AuthContext = Depends(require_any_role(list(SYSTEM_ROLES))),
 ):
     ...
 
@@ -119,7 +120,7 @@ Client -> API Gateway -> [HMAC Sign] -> Downstream Service
                                             |
                                     AuthContext (roles, permissions, tenant_id)
                                             |
-                                    require_permission / require_role
+                                    require_permission / require_any_role
 ```
 
 ## Testing
