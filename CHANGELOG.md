@@ -5,6 +5,12 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.67.0] - 2026-10-16
+
+Pins tr-shared-lib v0.96.0 (`tr_shared.testing.roundtrip_database`). No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.96.0, shared-auth-lib v0.67.0).
+
 ## [0.66.0] - 2026-10-15
 
 Pins tr-shared-lib v0.95.0 (G16 `assert_every_test_file_has_a_lane`). No code change in this library.
