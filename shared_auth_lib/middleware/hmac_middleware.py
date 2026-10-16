@@ -1,5 +1,3 @@
-import asyncio
-
 from fastapi import status
 from fastapi.responses import JSONResponse
 from redis.asyncio import Redis
@@ -12,8 +10,7 @@ from tr_shared.contracts import UNAVAILABLE_RETRY_AFTER_SECONDS
 from tr_shared.contracts.headers import HttpHeader
 from tr_shared.exceptions import ServiceUnavailableError
 from tr_shared.middleware.exception_handlers import base_api_exception_handler
-from tr_shared.redis.connection import require_plain_redis_url
-from tr_shared.redis.pool import build_connection_pool
+from tr_shared.redis import LoopBoundRedis
 from tr_shared.schemas import build_error_envelope
 
 from shared_auth_lib.logging import get_logger
@@ -96,10 +93,18 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             skip_paths if skip_paths is not None else DEFAULT_SKIP_PATHS
         )
         self.tolerance_seconds = tolerance_seconds
-        if redis_url is not None:
-            require_plain_redis_url(redis_url)
         self._redis_url = redis_url
-        self._replay_client: tuple[asyncio.AbstractEventLoop, Redis] | None = None
+        self._replay_store = (
+            LoopBoundRedis(
+                redis_url,
+                max_connections=REPLAY_REDIS_MAX_CONNECTIONS,
+                socket_timeout=REPLAY_REDIS_TIMEOUT_SECONDS,
+                socket_connect_timeout=REPLAY_REDIS_TIMEOUT_SECONDS,
+                decode_responses=True,
+            )
+            if redis_url is not None
+            else None
+        )
         if dev_mode_bypass is None:
             from shared_auth_lib.config import get_settings
 
@@ -247,18 +252,8 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
     def _replay_redis(self) -> Redis:
-        assert self._redis_url is not None
-        loop = asyncio.get_running_loop()
-        if self._replay_client is None or self._replay_client[0] is not loop:
-            pool = build_connection_pool(
-                self._redis_url,
-                max_connections=REPLAY_REDIS_MAX_CONNECTIONS,
-                socket_timeout=REPLAY_REDIS_TIMEOUT_SECONDS,
-                socket_connect_timeout=REPLAY_REDIS_TIMEOUT_SECONDS,
-                decode_responses=True,
-            )
-            self._replay_client = (loop, Redis(connection_pool=pool))
-        return self._replay_client[1]
+        assert self._replay_store is not None
+        return self._replay_store.client()
 
     async def _claim_signature(
         self, signature: str, path: str, request: Request
