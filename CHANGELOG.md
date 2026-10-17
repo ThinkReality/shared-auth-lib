@@ -5,6 +5,12 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.70.0] - 2026-10-17
+
+Pins tr-shared-lib v0.98.0 (shared Redis client and `StandardRedisAdapter` rebuilt per event loop). No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.98.0, shared-auth-lib v0.70.0).
+
 ## [0.69.0] - 2026-10-16
 
 Roles and permissions are checked against their single source when a check is built or run, so every service is
