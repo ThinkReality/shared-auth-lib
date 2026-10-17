@@ -5,6 +5,12 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.71.0] - 2026-10-17
+
+Pins tr-shared-lib v0.99.0 (every lib Redis client through the pool builder: `EventProducer`, `EventConsumer`, idempotency middleware and webhook guard; `EventProducer.set_redis` removed; `InMemoryIdempotencyChecker(redis_url=...)`). No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.99.0, shared-auth-lib v0.71.0) and apply the tr-shared-lib 0.99.0 consumer actions.
+
 ## [0.70.0] - 2026-10-17
 
 Pins tr-shared-lib v0.98.0 (shared Redis client and `StandardRedisAdapter` rebuilt per event loop). No code change in this library.
