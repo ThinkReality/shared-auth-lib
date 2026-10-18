@@ -46,7 +46,9 @@ class TestAuthContext:
 
     def test_role_hierarchy_on_the_wire_is_ignored_not_honoured(self):
         """An older producer still sending the field must not resurrect widening."""
-        ctx = self._make_context(roles=["sales_agent"], role_hierarchy=["super_admin"])
+        ctx = self._make_context(
+            roles=["sales_agent"], role_hierarchy=["super_admin"]
+        )
         assert ctx.has_any_role([SystemRole.SUPER_ADMIN]) is False
         assert ctx.roles == ["sales_agent"]
 
@@ -56,9 +58,7 @@ class TestAuthContext:
 
     def test_has_any_role_false(self):
         ctx = self._make_context(roles=["sales_agent"])
-        assert (
-            ctx.has_any_role([SystemRole.SUPER_ADMIN]) is False
-        )
+        assert ctx.has_any_role([SystemRole.SUPER_ADMIN]) is False
 
     def test_ensure_list_validator_with_none(self):
         ctx = self._make_context(roles=None, permissions=None)
@@ -66,9 +66,7 @@ class TestAuthContext:
         assert ctx.permissions == []
 
     def test_ensure_list_validator_with_string(self):
-        ctx = self._make_context(
-            roles="not-a-list", permissions="also-not"
-        )
+        ctx = self._make_context(roles="not-a-list", permissions="also-not")
         assert ctx.roles == []
         assert ctx.permissions == []
 
@@ -100,9 +98,7 @@ class TestGatewayIdentityHeaders:
 
     def test_string_uuid_accepted(self):
         uid = uuid4()
-        headers = GatewayIdentityHeaders(
-            user_id=str(uid)
-        )
+        headers = GatewayIdentityHeaders(user_id=str(uid))
         assert headers.user_id == uid
 
     def test_invalid_uuid_rejected(self):

@@ -100,9 +100,7 @@ class TestComputeSignature:
             secret=SECRET,
             timestamp="2025-01-01T00:00:00+00:00",
         )
-        assert compute_signature(**kwargs) == compute_signature(
-            **kwargs
-        )
+        assert compute_signature(**kwargs) == compute_signature(**kwargs)
 
     def test_different_secret_produces_different_signature(self):
         kwargs = dict(
@@ -153,15 +151,11 @@ class TestVerifySignature:
 
     def test_valid_signature_passes(self):
         params, sig = self._sign()
-        assert verify_signature(
-            **params, signature=sig
-        ) is True
+        assert verify_signature(**params, signature=sig) is True
 
     def test_wrong_signature_fails(self):
         params, _ = self._sign()
-        assert verify_signature(
-            **params, signature="0" * 64
-        ) is False
+        assert verify_signature(**params, signature="0" * 64) is False
 
     def test_non_ascii_signature_fails_instead_of_raising(self):
         params, _ = self._sign()
@@ -170,45 +164,41 @@ class TestVerifySignature:
     def test_wrong_secret_fails(self):
         params, sig = self._sign()
         params["secret"] = "wrong-secret"
-        assert verify_signature(
-            **params, signature=sig
-        ) is False
+        assert verify_signature(**params, signature=sig) is False
 
     def test_expired_timestamp_fails(self):
-        old_ts = (
-            datetime.now(UTC) - timedelta(seconds=60)
-        ).isoformat()
+        old_ts = (datetime.now(UTC) - timedelta(seconds=60)).isoformat()
         params, sig = self._sign(timestamp=old_ts)
-        assert verify_signature(
-            **params,
-            signature=sig,
-            tolerance_seconds=30,
-        ) is False
+        assert (
+            verify_signature(
+                **params,
+                signature=sig,
+                tolerance_seconds=30,
+            )
+            is False
+        )
 
     def test_future_timestamp_within_tolerance_passes(self):
-        future_ts = (
-            datetime.now(UTC) + timedelta(seconds=10)
-        ).isoformat()
+        future_ts = (datetime.now(UTC) + timedelta(seconds=10)).isoformat()
         params, sig = self._sign(timestamp=future_ts)
-        assert verify_signature(
-            **params,
-            signature=sig,
-            tolerance_seconds=30,
-        ) is True
+        assert (
+            verify_signature(
+                **params,
+                signature=sig,
+                tolerance_seconds=30,
+            )
+            is True
+        )
 
     def test_invalid_timestamp_format_fails(self):
         params, sig = self._sign()
         params["timestamp"] = "not-a-timestamp"
-        assert verify_signature(
-            **params, signature=sig
-        ) is False
+        assert verify_signature(**params, signature=sig) is False
 
     def test_none_timestamp_fails(self):
         params, sig = self._sign()
         params["timestamp"] = None
-        assert verify_signature(
-            **params, signature=sig
-        ) is False
+        assert verify_signature(**params, signature=sig) is False
 
     def test_forged_tenant_id_fails(self):
         """Verify that a request with a tampered X-Tenant-ID is rejected."""
@@ -229,14 +219,17 @@ class TestVerifySignature:
         # Attacker forges X-Tenant-ID after signature was computed
         forged_headers = original_headers.copy()
         forged_headers["X-Tenant-ID"] = "forged-tenant-id"
-        assert verify_signature(
-            method="GET",
-            path="/test",
-            headers=forged_headers,
-            secret=SECRET,
-            signature=sig,
-            timestamp=ts,
-        ) is False
+        assert (
+            verify_signature(
+                method="GET",
+                path="/test",
+                headers=forged_headers,
+                secret=SECRET,
+                signature=sig,
+                timestamp=ts,
+            )
+            is False
+        )
 
     def test_case_insensitive_headers_produce_same_result(self):
         ts = datetime.now(UTC).isoformat()
@@ -259,14 +252,17 @@ class TestVerifySignature:
             secret=SECRET,
             timestamp=ts,
         )
-        assert verify_signature(
-            method="GET",
-            path="/test",
-            headers=lower_case,
-            secret=SECRET,
-            signature=sig,
-            timestamp=ts,
-        ) is True
+        assert (
+            verify_signature(
+                method="GET",
+                path="/test",
+                headers=lower_case,
+                secret=SECRET,
+                signature=sig,
+                timestamp=ts,
+            )
+            is True
+        )
 
 
 class TestSignedEmailAndPermissions:
@@ -285,10 +281,17 @@ class TestSignedEmailAndPermissions:
         sig = compute_signature(
             method="GET", path="/test", headers=headers, secret=SECRET, timestamp=ts
         )
-        assert verify_signature(
-            method="GET", path="/test", headers=headers,
-            secret=SECRET, signature=sig, timestamp=ts,
-        ) is True
+        assert (
+            verify_signature(
+                method="GET",
+                path="/test",
+                headers=headers,
+                secret=SECRET,
+                signature=sig,
+                timestamp=ts,
+            )
+            is True
+        )
 
     def test_tampered_email_fails_verification(self):
         ts = datetime.now(UTC).isoformat()
@@ -297,10 +300,17 @@ class TestSignedEmailAndPermissions:
             method="GET", path="/test", headers=headers, secret=SECRET, timestamp=ts
         )
         headers["X-User-Email"] = "attacker@evil.test"
-        assert verify_signature(
-            method="GET", path="/test", headers=headers,
-            secret=SECRET, signature=sig, timestamp=ts,
-        ) is False
+        assert (
+            verify_signature(
+                method="GET",
+                path="/test",
+                headers=headers,
+                secret=SECRET,
+                signature=sig,
+                timestamp=ts,
+            )
+            is False
+        )
 
     def test_tampered_permissions_fails_verification(self):
         ts = datetime.now(UTC).isoformat()
@@ -309,7 +319,14 @@ class TestSignedEmailAndPermissions:
             method="GET", path="/test", headers=headers, secret=SECRET, timestamp=ts
         )
         headers["X-User-Permissions"] = "leads:read,admin:all"
-        assert verify_signature(
-            method="GET", path="/test", headers=headers,
-            secret=SECRET, signature=sig, timestamp=ts,
-        ) is False
+        assert (
+            verify_signature(
+                method="GET",
+                path="/test",
+                headers=headers,
+                secret=SECRET,
+                signature=sig,
+                timestamp=ts,
+            )
+            is False
+        )

@@ -68,13 +68,17 @@ def test_an_exempt_prefix_that_matches_no_route_fails():
         assert_module_gates(
             _app(gated=True),
             {"/api/v1/dld/": Feature.DLD},
-            exempt_prefixes={"/api/v1/dld/internal/": ModuleExemption(reason=_REASON)},
+            exempt_prefixes={
+                "/api/v1/dld/internal/": ModuleExemption(reason=_REASON)
+            },
         )
 
 
 def test_an_exempt_prefix_outside_every_gate_prefix_fails():
     """Exempting something no gate reaches asserts nothing and hides a typo."""
-    with pytest.raises(AssertionError, match="exempt prefixes not covered by any gate"):
+    with pytest.raises(
+        AssertionError, match="exempt prefixes not covered by any gate"
+    ):
         assert_module_gates(
             _app(gated=True),
             {"/api/v1/dld/": Feature.DLD},
@@ -89,7 +93,9 @@ def test_an_exempt_route_that_authenticates_fails_the_claim():
         assert_module_gates(
             _app(gated=True, with_internal=True, internal_gated=True),
             {"/api/v1/dld/": Feature.DLD},
-            exempt_prefixes={"/api/v1/dld/internal/": ModuleExemption(reason=_REASON)},
+            exempt_prefixes={
+                "/api/v1/dld/internal/": ModuleExemption(reason=_REASON)
+            },
         )
 
 
@@ -113,12 +119,14 @@ def _app_with_sibling_prefix():
 
 
 def test_a_stale_prefix_does_not_shadow_a_sibling_route():
-    """"/api/v1/sync" must not prefix-match "/api/v1/sync-jobs": that would let a
+    """ "/api/v1/sync" must not prefix-match "/api/v1/sync-jobs": that would let a
     gate whose router was deleted still count a sibling's routes as matches, and
     the "matched no route" alarm — the one thing that catches a stale gate —
     would never fire."""
     with pytest.raises(AssertionError, match="matched no route"):
-        assert_module_gates(_app_with_sibling_prefix(), {"/api/v1/sync": Feature.DLD})
+        assert_module_gates(
+            _app_with_sibling_prefix(), {"/api/v1/sync": Feature.DLD}
+        )
 
 
 async def _bridge_current_user(auth_context=Depends(require_auth)):
@@ -157,5 +165,7 @@ def test_an_exempt_route_that_authenticates_via_a_nested_dependency_fails_the_cl
         assert_module_gates(
             _app_with_nested_auth_under_exempt_prefix(),
             {"/api/v1/dld/": Feature.DLD},
-            exempt_prefixes={"/api/v1/dld/internal/": ModuleExemption(reason=_REASON)},
+            exempt_prefixes={
+                "/api/v1/dld/internal/": ModuleExemption(reason=_REASON)
+            },
         )
