@@ -34,9 +34,9 @@ jobs:
       - name: Sync deps
         run: uv sync --locked
       - name: Ruff lint
-        run: uv run ruff check shared_auth_lib/
+        run: uv run ruff check .
       - name: Ruff format
-        run: uv run ruff format --check shared_auth_lib/
+        run: uv run ruff format --check .
       # Zero-tolerance mypy: shared-auth-lib is fully typed (0 errors) and ships
       # py.typed, so consumers type-check against it. Any NEW type error must fail
       # here before it reaches the fleet — no baseline, no ratchet.

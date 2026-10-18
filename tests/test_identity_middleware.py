@@ -22,31 +22,17 @@ def _create_app() -> FastAPI:
 
     @app.get("/check-identity")
     async def check_identity(
-        identity: GatewayIdentityHeaders = Depends(
-            get_gateway_identity
-        ),
+        identity: GatewayIdentityHeaders = Depends(get_gateway_identity),
     ):
         return {
-            "user_id": (
-                str(identity.user_id)
-                if identity.user_id
-                else None
-            ),
+            "user_id": (str(identity.user_id) if identity.user_id else None),
             "user_role": identity.user_role,
-            "tenant_id": (
-                str(identity.tenant_id)
-                if identity.tenant_id
-                else None
-            ),
+            "tenant_id": (str(identity.tenant_id) if identity.tenant_id else None),
             "user_email": identity.user_email,
             "permissions": identity.permissions,
             "auth_provider": identity.auth_provider,
             "correlation_id": identity.correlation_id,
-            "site_id": (
-                str(identity.site_id)
-                if identity.site_id
-                else None
-            ),
+            "site_id": (str(identity.site_id) if identity.site_id else None),
         }
 
     return app
@@ -195,9 +181,7 @@ def _create_app_with_correlation_middleware(
 
     @app.get("/check-identity")
     async def check_identity(
-        identity: GatewayIdentityHeaders = Depends(
-            get_gateway_identity
-        ),
+        identity: GatewayIdentityHeaders = Depends(get_gateway_identity),
     ):
         return {
             "correlation_id": identity.correlation_id,
@@ -209,9 +193,7 @@ def _create_app_with_correlation_middleware(
 class TestCorrelationIDFallback:
     def test_correlation_id_falls_back_to_request_state(self):
         """When no X-Correlation-Id header, use request.state."""
-        app = _create_app_with_correlation_middleware(
-            "state-corr-456"
-        )
+        app = _create_app_with_correlation_middleware("state-corr-456")
         client = TestClient(app)
         resp = client.get("/check-identity")
         assert resp.status_code == 200
@@ -219,15 +201,11 @@ class TestCorrelationIDFallback:
 
     def test_correlation_id_header_takes_precedence(self):
         """X-Correlation-Id header wins over request.state."""
-        app = _create_app_with_correlation_middleware(
-            "state-corr-789"
-        )
+        app = _create_app_with_correlation_middleware("state-corr-789")
         client = TestClient(app)
         resp = client.get(
             "/check-identity",
             headers={"X-Correlation-Id": "header-corr-123"},
         )
         assert resp.status_code == 200
-        assert (
-            resp.json()["correlation_id"] == "header-corr-123"
-        )
+        assert resp.json()["correlation_id"] == "header-corr-123"

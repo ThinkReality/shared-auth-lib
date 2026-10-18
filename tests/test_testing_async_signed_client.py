@@ -88,7 +88,9 @@ class TestTheChainActuallyRuns:
         async with AsyncClient(
             transport=ASGITransport(app=_app()), base_url="http://test"
         ) as client:
-            response = await client.get("/api/v1/whoami", headers=Persona().headers())
+            response = await client.get(
+                "/api/v1/whoami", headers=Persona().headers()
+            )
 
         assert response.status_code == 403
 
@@ -110,8 +112,12 @@ class TestPersonaDrivesAuthorization:
             response = await client.get("/api/v1/invoices")
         assert response.status_code == 200
 
-    async def test_permission_withheld_is_403_through_the_real_dependency(self) -> None:
-        persona = Persona(permissions=("finance:invoices:read", "finance:invoices:write"))
+    async def test_permission_withheld_is_403_through_the_real_dependency(
+        self,
+    ) -> None:
+        persona = Persona(
+            permissions=("finance:invoices:read", "finance:invoices:write")
+        )
         async with async_signed_client(
             _app(), persona.without("finance:invoices:read")
         ) as client:
@@ -141,7 +147,9 @@ class TestProviderSubstitution:
         app = _app()
 
         class _Unreachable:
-            async def get_auth_context(self, external_auth_id, /, correlation_id=None):
+            async def get_auth_context(
+                self, external_auth_id, /, correlation_id=None
+            ):
                 raise AssertionError("the real HTTP client must not be reached")
 
         persona = Persona()

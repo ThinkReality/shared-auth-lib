@@ -133,8 +133,12 @@ class TestPersonaDrivesAuthorization:
             assert client.get("/api/v1/invoices").status_code == 200
 
     def test_permission_withheld_is_403_through_the_real_dependency(self) -> None:
-        persona = Persona(permissions=("finance:invoices:read", "finance:invoices:write"))
-        with signed_client(_app(), persona.without("finance:invoices:read")) as client:
+        persona = Persona(
+            permissions=("finance:invoices:read", "finance:invoices:write")
+        )
+        with signed_client(
+            _app(), persona.without("finance:invoices:read")
+        ) as client:
             response = client.get("/api/v1/invoices")
 
         assert response.status_code == 403
@@ -191,7 +195,9 @@ class TestProviderSubstitution:
         app = _app()
 
         class _Unreachable:
-            async def get_auth_context(self, external_auth_id, /, correlation_id=None):
+            async def get_auth_context(
+                self, external_auth_id, /, correlation_id=None
+            ):
                 raise AssertionError("the real HTTP client must not be reached")
 
         persona = Persona()

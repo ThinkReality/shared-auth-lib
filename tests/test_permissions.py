@@ -301,4 +301,3 @@ def test_new_read_permissions_are_seedable_with_resource_and_action():
         "task",
         "read_all",
     )
-

@@ -17,15 +17,15 @@ repos:
         pass_filenames: false
 
       - id: ruff-check
-        name: ruff check shared_auth_lib/
-        entry: uv run ruff check shared_auth_lib/
+        name: ruff check .
+        entry: uv run ruff check .
         language: system
         types: [python]
         pass_filenames: false
 
       - id: ruff-format
-        name: ruff format --check shared_auth_lib/
-        entry: uv run ruff format --check shared_auth_lib/
+        name: ruff format --check .
+        entry: uv run ruff format --check .
         language: system
         types: [python]
         pass_filenames: false

@@ -56,8 +56,16 @@ class TestDevBypassSettings:
             "AUTH_LIB_GATEWAY_SIGNING_SECRET": "test-secret",
             "ENVIRONMENT": "development",
             "AUTH_LIB_DEV_MODE_BYPASS": "false",
-            **{f"AUTH_LIB_{k}": str(v) for k, v in overrides.items() if k != "ENVIRONMENT"},
-            **({"ENVIRONMENT": str(overrides["ENVIRONMENT"])} if "ENVIRONMENT" in overrides else {}),
+            **{
+                f"AUTH_LIB_{k}": str(v)
+                for k, v in overrides.items()
+                if k != "ENVIRONMENT"
+            },
+            **(
+                {"ENVIRONMENT": str(overrides["ENVIRONMENT"])}
+                if "ENVIRONMENT" in overrides
+                else {}
+            ),
         }
         with patch.dict(os.environ, env, clear=False):
             return AuthLibSettings()
