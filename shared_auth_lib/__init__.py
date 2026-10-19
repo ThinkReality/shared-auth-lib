@@ -17,6 +17,11 @@ from shared_auth_lib.constants import (
     SYSTEM_ROLES,
     SystemRole,
 )
+from shared_auth_lib.client_ip import client_ip
+from shared_auth_lib.dependencies.rate_limit_keys import (
+    client_rate_limit_key,
+    user_rate_limit_key,
+)
 from shared_auth_lib.dependencies.auth_dependencies import (
     get_current_auth_context,
     get_current_user,
@@ -64,6 +69,8 @@ __all__ = [
     "GatewayIdentityHeaders",
     "IdentityExtractionMiddleware",
     "can",
+    "client_ip",
+    "client_rate_limit_key",
     "compute_signature",
     "permission_granted",
     "get_current_auth_context",
@@ -81,5 +88,6 @@ __all__ = [
     "install_standard_middleware",
     "openapi_security_from_skip_paths",
     "require_permission",
+    "user_rate_limit_key",
     "verify_signature",
 ]
