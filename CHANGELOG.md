@@ -5,6 +5,12 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.74.0] - 2026-10-19
+
+Pins tr-shared-lib v0.102.0 (`ServiceHTTPClient(transport=...)` accepts an `httpx` transport, so tests can stub third-party HTTP at the transport). No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.102.0, shared-auth-lib v0.74.0).
+
 ## [0.73.0] - 2026-10-18
 
 Pins tr-shared-lib v0.101.0 (`BaseRepository.soft_delete` raises `TypeError` on a model with no `deleted_at` instead of returning `True` for an untouched row). No code change in this library.
