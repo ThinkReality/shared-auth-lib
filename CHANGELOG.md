@@ -5,6 +5,22 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.75.0] - 2026-10-19
+
+Pins tr-shared-lib v0.103.0, whose `create_rate_limit_dependency` now requires an `identifier` FastAPI dependency.
+
+### Added
+- `client_ip(request)`: `X-Original-IP` when the request passed gateway HMAC verification, else the edge-set
+  `X-Real-IP`, else the socket peer. `X-Original-IP` is not covered by the signature, so it is believed only on a
+  verified request; behind Railway the socket peer is the edge proxy, which is why `X-Real-IP` comes before it.
+- `GatewayHMACMiddleware` marks a request it verified (`request.state.gateway_verified`); dev-mode bypass and
+  skip-listed paths are never marked.
+- `user_rate_limit_key` (depends on `require_auth`) and `client_rate_limit_key`: identifiers for
+  `create_rate_limit_dependency(limiter, identifier=...)`.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.103.0, shared-auth-lib v0.75.0) and pass
+`identifier=` at every `create_rate_limit_dependency` call site in the same change.
+
 ## [0.74.0] - 2026-10-19
 
 Pins tr-shared-lib v0.102.0 (`ServiceHTTPClient(transport=...)` accepts an `httpx` transport, so tests can stub third-party HTTP at the transport). No code change in this library.
