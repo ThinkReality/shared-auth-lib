@@ -17,7 +17,7 @@ re-derived by hand at seven call sites.
 **Canonical order, outermost → innermost:**
 
     extras[OUTERMOST] → CORS → GlobalErrorHandler → CorrelationID → Logging
-      → extras[BEFORE_HMAC] → RateLimit → GatewayHMAC → Identity
+      → extras[BEFORE_HMAC] → GatewayHMAC → Identity
       → UnstorableText → Idempotency → extras[INNERMOST]
 
 Why each boundary is where it is:
@@ -102,7 +102,6 @@ def install_standard_middleware(
     cors: dict[str, Any] | None,
     slack_webhook_url: str | None = "",
     hmac_tolerance_seconds: int | None = None,
-    rate_limit: tuple[Any, Any] | None = None,
     idempotency_redis_url: str | None = None,
     extras: Sequence[tuple[Slot, type, dict[str, Any]]] = (),
 ) -> None:
@@ -131,7 +130,6 @@ def install_standard_middleware(
         slack_webhook_url: None is coerced to "" — callers pass a settings
             value that is optional on several services.
         hmac_tolerance_seconds: None leaves the library default in force.
-        rate_limit: `(limiter, config)`, or None for no rate limiting.
         idempotency_redis_url: Redis URL, or None for no idempotency layer.
         extras: `(slot, middleware_class, kwargs)`, applied in the order given
             within each slot.
@@ -175,12 +173,6 @@ def install_standard_middleware(
     if hmac_tolerance_seconds is not None:
         hmac_kwargs["tolerance_seconds"] = hmac_tolerance_seconds
     add(GatewayHMACMiddleware, **hmac_kwargs)
-
-    if rate_limit is not None:
-        from tr_shared.rate_limiter import RateLimitMiddleware
-
-        limiter, config = rate_limit
-        add(RateLimitMiddleware, limiter=limiter, config=config)
 
     add_slot(Slot.BEFORE_HMAC)
 

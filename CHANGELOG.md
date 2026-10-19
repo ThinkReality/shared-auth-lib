@@ -5,6 +5,16 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.76.0] - 2026-10-20
+
+Pins tr-shared-lib v0.104.0, which deletes `RateLimitMiddleware` and adds `HttpHeader.BFF_TOKEN`.
+
+### Removed (breaking)
+- `install_standard_middleware(rate_limit=...)`. The slot installed tr-shared-lib's `RateLimitMiddleware` before
+  `GatewayHMACMiddleware`, where every caller behind the gateway shares one edge IP, so its limit was one bucket for
+  the whole platform. No service passes it since the 2026-10-20 media and WAM changes. tr-shared-lib v0.104.0 deletes
+  the middleware itself.
+
 ## [0.75.0] - 2026-10-19
 
 Pins tr-shared-lib v0.103.0, whose `create_rate_limit_dependency` now requires an `identifier` FastAPI dependency.
