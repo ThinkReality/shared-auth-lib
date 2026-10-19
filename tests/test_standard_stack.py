@@ -74,16 +74,12 @@ CANONICAL = [
 
 
 def test_canonical_order_with_every_optional_layer_enabled():
-    app = build(
-        rate_limit=("limiter", "config"),
-        idempotency_redis_url="redis://localhost:6379/0",
-    )
+    app = build(idempotency_redis_url="redis://localhost:6379/0")
     assert order(app) == [
         "CORSMiddleware",
         "GlobalErrorHandlerMiddleware",
         "CorrelationIDMiddleware",
         "LoggingMiddleware",
-        "RateLimitMiddleware",
         "GatewayHMACMiddleware",
         "IdentityExtractionMiddleware",
         "UnstorableTextMiddleware",
@@ -99,7 +95,6 @@ def test_minimal_stack_is_the_canonical_seven():
     "override,absent",
     [
         ({"cors": None}, "CORSMiddleware"),
-        ({"rate_limit": None}, "RateLimitMiddleware"),
         ({"idempotency_redis_url": None}, "APIIdempotencyMiddleware"),
     ],
 )
@@ -109,6 +104,12 @@ def test_each_optional_layer_omits_only_itself(override, absent):
     assert [m for m in CANONICAL if m != absent] == [
         m for m in installed if m in CANONICAL
     ]
+
+
+def test_there_is_no_pre_authentication_rate_limit_slot():
+    """Before HMAC every caller behind the gateway shares one edge IP, so an IP limit there is one bucket for all."""
+    with pytest.raises(TypeError):
+        build(rate_limit=("limiter", "config"))
 
 
 def test_hmac_is_always_outside_identity():
@@ -122,7 +123,6 @@ def test_hmac_is_always_outside_identity():
     """
     for app in (
         build(),
-        build(rate_limit=("l", "c")),
         build(extras=[(Slot.INNERMOST, _Marker, {})]),
         build(extras=[(Slot.BEFORE_HMAC, _Marker, {})]),
     ):
