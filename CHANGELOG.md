@@ -5,7 +5,9 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.76.0] - 2026-10-20
+
+Pins tr-shared-lib v0.104.0, which deletes `RateLimitMiddleware` and adds `HttpHeader.BFF_TOKEN`.
 
 ### Removed (breaking)
 - `install_standard_middleware(rate_limit=...)`. The slot installed tr-shared-lib's `RateLimitMiddleware` before
