@@ -17,7 +17,6 @@ from shared_auth_lib.constants import (
     SYSTEM_ROLES,
     SystemRole,
 )
-from shared_auth_lib.client_ip import client_ip
 from shared_auth_lib.dependencies.rate_limit_keys import (
     client_rate_limit_key,
     user_rate_limit_key,
@@ -69,7 +68,6 @@ __all__ = [
     "GatewayIdentityHeaders",
     "IdentityExtractionMiddleware",
     "can",
-    "client_ip",
     "client_rate_limit_key",
     "compute_signature",
     "permission_granted",

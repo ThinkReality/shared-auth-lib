@@ -4,7 +4,9 @@ import pytest
 from fastapi import Depends, FastAPI, Request
 from httpx import ASGITransport, AsyncClient
 
-from shared_auth_lib import client_ip, client_rate_limit_key, user_rate_limit_key
+from tr_shared.client_ip import client_ip
+
+from shared_auth_lib import client_rate_limit_key, user_rate_limit_key
 from shared_auth_lib.dependencies.auth_dependencies import _AuthClientRegistry
 from shared_auth_lib.middleware.hmac_middleware import GatewayHMACMiddleware
 from shared_auth_lib.middleware.identity_middleware import (

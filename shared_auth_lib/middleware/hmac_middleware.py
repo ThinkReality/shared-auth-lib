@@ -13,7 +13,7 @@ from tr_shared.middleware.exception_handlers import base_api_exception_handler
 from tr_shared.redis import LoopBoundRedis
 from tr_shared.schemas import build_error_envelope
 
-from shared_auth_lib.client_ip import GATEWAY_VERIFIED
+from tr_shared.client_ip import GATEWAY_VERIFIED
 from shared_auth_lib.logging import get_logger
 from shared_auth_lib.services.hmac_verifier import verify_signature
 
