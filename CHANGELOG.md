@@ -5,6 +5,15 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.77.0] - 2026-10-21
+
+Pins tr-shared-lib v0.105.0, which now owns `client_ip` and uses it in `LoggingMiddleware`.
+
+### Removed (breaking)
+- `shared_auth_lib.client_ip` and the `client_ip` re-export. The rule moved to `tr_shared.client_ip` so tr-shared-lib's
+  request log and webhook router can use it too; shared-auth-lib depends on tr-shared-lib, never the reverse. Import
+  `from tr_shared.client_ip import client_ip, GATEWAY_VERIFIED`. Behaviour is unchanged.
+
 ## [0.76.0] - 2026-10-20
 
 Pins tr-shared-lib v0.104.0, which deletes `RateLimitMiddleware` and adds `HttpHeader.BFF_TOKEN`.

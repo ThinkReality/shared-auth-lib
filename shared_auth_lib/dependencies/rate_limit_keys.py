@@ -1,6 +1,6 @@
 from fastapi import Depends, Request
 
-from shared_auth_lib.client_ip import client_ip
+from tr_shared.client_ip import client_ip
 from shared_auth_lib.dependencies.auth_dependencies import require_auth
 from shared_auth_lib.models.auth_context import AuthContext
 
