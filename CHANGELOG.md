@@ -5,6 +5,20 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.78.0] - 2026-10-24
+
+Pins tr-shared-lib v0.106.0, which adds `RESOLVED_CLIENT_IP` and `assert_no_local_client_ip_derivation`. The guard
+now runs over this package (`tests/test_client_ip_has_one_source.py`); it would have caught the `require_auth`
+reader below.
+
+### Fixed
+- `require_auth` audited `auth_failure.source_ip` from `X-Forwarded-For`, which the Railway edge overwrites with the
+  gateway's egress IP, so every failure logged the gateway. It now uses `tr_shared.client_ip`, the fleet rule.
+
+### Removed
+- The `tr-shared-lib[monitoring]` dev dependency. It existed to exercise the `RateLimitMiddleware` branch of
+  `install_standard_middleware`, which 0.76.0 removed.
+
 ## [0.77.0] - 2026-10-21
 
 Pins tr-shared-lib v0.105.0, which now owns `client_ip` and uses it in `LoggingMiddleware`.

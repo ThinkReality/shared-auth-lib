@@ -8,6 +8,7 @@ import pytest
 from fastapi import Depends, FastAPI, Request
 from fastapi.testclient import TestClient
 from structlog.testing import capture_logs
+from tr_shared.client_ip import GATEWAY_VERIFIED
 from tr_shared.contracts import UNAVAILABLE_RETRY_AFTER_SECONDS
 from tr_shared.middleware import register_exception_handlers
 from tr_shared.schemas import build_error_envelope
@@ -354,3 +355,32 @@ class TestAuthServiceUnavailable:
             resp = client.get("/require-auth", headers=SIGNED_IN)
         assert resp.status_code == 401
         assert resp.json()["error"]["code"] == "AUTHLIB_AUTH_002"
+
+
+def _gateway_verified(app):
+    async def middleware(scope, receive, send):
+        scope.setdefault("state", {})[GATEWAY_VERIFIED] = True
+        await app(scope, receive, send)
+
+    return middleware
+
+
+class TestAuthFailureSourceIp:
+    SPOOFED = {"X-Forwarded-For": "203.0.113.66", "X-Real-IP": "100.64.0.9"}
+
+    def _audited_source_ip(self, app) -> str:
+        with capture_logs() as logs, TestClient(app) as client:
+            client.get(
+                "/require-auth",
+                headers=self.SPOOFED | {"X-Original-IP": "198.51.100.7"},
+            )
+        (failure,) = [entry for entry in logs if entry["event"] == "auth_failure"]
+        return failure["extra"]["source_ip"]
+
+    def test_unverified_request_audits_the_edge_ip_not_x_forwarded_for(self):
+        app = _create_app(_mock_client())
+        assert self._audited_source_ip(app) == "100.64.0.9"
+
+    def test_gateway_verified_request_audits_the_original_ip(self):
+        app = _create_app(_mock_client())
+        assert self._audited_source_ip(_gateway_verified(app)) == "198.51.100.7"

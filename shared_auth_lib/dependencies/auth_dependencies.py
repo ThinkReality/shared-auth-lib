@@ -5,6 +5,7 @@ from typing import Any, Protocol
 from uuid import UUID
 
 from fastapi import Depends, Request
+from tr_shared.client_ip import client_ip
 from tr_shared.contracts import UNAVAILABLE_RETRY_AFTER_SECONDS
 from tr_shared.exceptions import (
     AuthenticationError,
@@ -154,11 +155,7 @@ async def require_auth(
         request.state.auth_context = auth_context
         return auth_context
 
-    _source_ip = (
-        request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-        or request.headers.get("x-real-ip", "")
-        or (request.client.host if request.client else "unknown")
-    )
+    _source_ip = client_ip(request)
 
     if not identity.user_id:
         _audit_logger.warning(
