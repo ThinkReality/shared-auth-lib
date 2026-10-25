@@ -5,6 +5,12 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.79.0] - 2026-10-25
+
+Pins tr-shared-lib v0.107.0 (`LoggingMiddleware` logs `user_id` from the `AUTHENTICATED_USER_ID` request-state key; `DurableEventPublisher` drops its `source_service` parameter). No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.107.0, shared-auth-lib v0.79.0). Remove any `source_service=` argument to `DurableEventPublisher` first, or the call raises `TypeError`.
+
 ## [0.78.0] - 2026-10-24
 
 Pins tr-shared-lib v0.106.0, which adds `RESOLVED_CLIENT_IP` and `assert_no_local_client_ip_derivation`. The guard
