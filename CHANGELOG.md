@@ -5,6 +5,13 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.81.0] - 2026-10-26
+
+Pins tr-shared-lib v0.109.0: adds `ContentTooLargeError` (413, `CONTENT_TOO_LARGE_001`) to `tr_shared.exceptions`.
+No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.109.0, shared-auth-lib v0.81.0).
+
 ## [0.80.0] - 2026-10-26
 
 Pins tr-shared-lib v0.108.0: the idle-connection check is one simple-protocol `SELECT 1` bounded by
