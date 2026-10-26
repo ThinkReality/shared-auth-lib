@@ -1,6 +1,7 @@
 import httpx
 from tr_shared.contracts.db_pool import (
     DB_CONNECT_TIMEOUT_SECONDS,
+    DB_IDLE_PING_TIMEOUT_SECONDS,
     DEFAULT_POOL_TIMEOUT_SECONDS,
 )
 
@@ -12,7 +13,11 @@ from tests.crm_core_stub import CRM_CORE_URL
 
 
 def test_crm_core_can_fail_inside_the_auth_budget():
-    crm_core_worst_case = DEFAULT_POOL_TIMEOUT_SECONDS + DB_CONNECT_TIMEOUT_SECONDS
+    crm_core_worst_case = (
+        DEFAULT_POOL_TIMEOUT_SECONDS
+        + DB_IDLE_PING_TIMEOUT_SECONDS
+        + DB_CONNECT_TIMEOUT_SECONDS
+    )
     assert crm_core_worst_case < AUTH_CONTEXT_REQUEST_TIMEOUT_SECONDS
 
 

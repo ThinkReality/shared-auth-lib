@@ -5,6 +5,20 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.80.0] - 2026-10-26
+
+Pins tr-shared-lib v0.108.0: the idle-connection check is one simple-protocol `SELECT 1` bounded by
+`DB_IDLE_PING_TIMEOUT_SECONDS` (0.5 s), and `asyncpg>=0.32.0`, so a statement that times out on a stalled
+connection frees its checkout. No code change in this library.
+
+### Changed
+- `test_crm_core_can_fail_inside_the_auth_budget` adds `DB_IDLE_PING_TIMEOUT_SECONDS` to crm-core's worst case:
+  a checkout can wait for a free connection, an idle one's ping and a new connection, in that order. 2 + 0.5 + 3 =
+  5.5 s, under `AUTH_CONTEXT_REQUEST_TIMEOUT_SECONDS` (6 s).
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.108.0, shared-auth-lib v0.80.0). Each service's lock
+moves to asyncpg 0.32.0.
+
 ## [0.79.0] - 2026-10-25
 
 Pins tr-shared-lib v0.107.0 (`LoggingMiddleware` logs `user_id` from the `AUTHENTICATED_USER_ID` request-state key; `DurableEventPublisher` drops its `source_service` parameter). No code change in this library.
