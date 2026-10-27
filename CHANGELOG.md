@@ -5,6 +5,14 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.82.0] - 2026-10-27
+
+Pins tr-shared-lib v0.110.0: adds `assert_not_found_names_a_resource` to `tr_shared.testing`, a guard that fails
+when a `NotFoundError` is given a sentence instead of a resource name.
+No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.110.0, shared-auth-lib v0.82.0).
+
 ## [0.81.0] - 2026-10-26
 
 Pins tr-shared-lib v0.109.0: adds `ContentTooLargeError` (413, `CONTENT_TOO_LARGE_001`) to `tr_shared.exceptions`.
