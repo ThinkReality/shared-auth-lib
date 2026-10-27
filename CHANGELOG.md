@@ -5,6 +5,18 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.83.0] - 2026-10-27
+
+Pins tr-shared-lib v0.111.0:
+- adds `assert_no_raw_http_exceptions` to `tr_shared.testing`, a guard that fails when app code constructs a raw
+  `HTTPException` (directly, through an import alias or through a subclass);
+- **breaking:** `create_rate_limit_dependency` requires `code=` and raises `RateLimitError` under it, and
+  `RateLimitError` takes optional `headers`.
+No code change in this library.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.111.0, shared-auth-lib v0.83.0), and pass `code=` at
+every `create_rate_limit_dependency` call site.
+
 ## [0.82.0] - 2026-10-27
 
 Pins tr-shared-lib v0.110.0: adds `assert_not_found_names_a_resource` to `tr_shared.testing`, a guard that fails
