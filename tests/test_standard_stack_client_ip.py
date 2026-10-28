@@ -11,6 +11,7 @@ from structlog.testing import capture_logs
 from shared_auth_lib.dependencies.auth_dependencies import _AuthClientRegistry
 from shared_auth_lib.middleware import install_standard_middleware
 from shared_auth_lib.testing import Persona, async_signed_client
+from tr_shared.middleware import register_exception_handlers
 
 SECRET = "test-gateway-signing-secret"
 REFUSING_REDIS = "redis://127.0.0.1:1/0"
@@ -37,6 +38,7 @@ def _signing_env(monkeypatch: pytest.MonkeyPatch):
 
 def _app(redis_url: str = REFUSING_REDIS) -> FastAPI:
     app = FastAPI()
+    register_exception_handlers(app, code_prefix="TEST")
 
     @app.get("/api/v1/things")
     async def things() -> dict:

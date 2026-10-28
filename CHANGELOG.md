@@ -5,6 +5,17 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.84.0] - 2026-10-28
+
+Pins tr-shared-lib v0.112.0: every error code the library mints for itself carries the service prefix
+(`{P}_VALIDATION_000`, `{P}_INTERNAL_000`, `{P}_CONFLICT_000`, `{P}_HTTP_<status>`), and Starlette's own 404/405 get
+the canonical envelope. **Breaking:** `register_exception_handlers(app, *, code_prefix)` requires the prefix.
+No code change in this library. `install_standard_middleware` installs `GlobalErrorHandlerMiddleware` and
+`UnstorableTextMiddleware`, which read that prefix from the app, so a service must call the registrar as before.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.112.0, shared-auth-lib v0.84.0), and pass
+`code_prefix=` to the one `register_exception_handlers` call in `main.py` and to test apps that build the stack.
+
 ## [0.83.0] - 2026-10-27
 
 Pins tr-shared-lib v0.111.0:

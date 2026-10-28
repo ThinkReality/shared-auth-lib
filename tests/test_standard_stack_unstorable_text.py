@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from shared_auth_lib.dependencies.auth_dependencies import _AuthClientRegistry
 from shared_auth_lib.middleware import install_standard_middleware
 from shared_auth_lib.testing import Persona, async_signed_client
+from tr_shared.middleware import register_exception_handlers
 
 SECRET = "test-gateway-signing-secret"
 REFUSING_REDIS = "redis://127.0.0.1:1/0"
@@ -41,6 +42,7 @@ def _signing_env(monkeypatch: pytest.MonkeyPatch):
 
 def _app(redis_url: str = REFUSING_REDIS) -> FastAPI:
     app = FastAPI()
+    register_exception_handlers(app, code_prefix="TEST")
 
     @app.post("/api/v1/roles")
     async def create(role: _Role) -> dict:
@@ -69,7 +71,7 @@ async def test_a_signed_request_with_unstorable_text_is_a_correlated_422(
 
     assert response.status_code == 422, response.text
     error = response.json()["error"]
-    assert error["code"] == "VALIDATION_ERROR"
+    assert error["code"] == "TEST_VALIDATION_000"
     assert error["fields"][0]["loc"] == ["body", "description"]
     assert error["correlation_id"] == response.headers["x-correlation-id"]
 

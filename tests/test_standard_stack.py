@@ -21,6 +21,7 @@ from fastapi.testclient import TestClient
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from shared_auth_lib.middleware import Slot, install_standard_middleware
+from tr_shared.middleware import register_exception_handlers
 from tests.test_hmac_middleware import REFUSED_REDIS_URL, _sign_headers
 from tests.test_hmac_middleware import SECRET as SIGNING_SECRET
 
@@ -37,6 +38,7 @@ class _OtherMarker(BaseHTTPMiddleware):
 
 def build(**overrides: Any) -> FastAPI:
     app = FastAPI()
+    register_exception_handlers(app, code_prefix="TEST")
     kwargs: dict[str, Any] = {
         "service_name": "test-service",
         "environment": "test",

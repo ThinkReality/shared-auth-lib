@@ -67,7 +67,7 @@ def _create_app(provider: AuthContextProvider) -> FastAPI:
     # fell back to Starlette's default renderer, so these tests asserted a body
     # shape that no service actually returns — and would have kept passing while
     # the real canonical envelope regressed.
-    register_exception_handlers(app)
+    register_exception_handlers(app, code_prefix="TEST")
 
     app.dependency_overrides[get_auth_context_client] = lambda: provider
 
