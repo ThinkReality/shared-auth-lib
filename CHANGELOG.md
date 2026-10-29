@@ -5,6 +5,17 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.85.0] - 2026-10-29
+
+Pins tr-shared-lib v0.113.0. No code change in this library: it raises the shared exceptions only with its own
+`AUTHLIB_*` codes, and builds no health router.
+**Breaking for services, through the pin:** `create_health_router(..., *, engine, redis)` takes getters and owns the
+probes (`db_check`/`redis_check` are gone), `ComponentCheck.error` and `BaseAPIException.to_dict()` are removed, and a
+shared exception raised without `code=` renders `{P}_{CATEGORY}_000`.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.113.0, shared-auth-lib v0.85.0) in the same change
+that moves each service's `create_health_router` call to `engine=`/`redis=`.
+
 ## [0.84.0] - 2026-10-28
 
 Pins tr-shared-lib v0.112.0: every error code the library mints for itself carries the service prefix
