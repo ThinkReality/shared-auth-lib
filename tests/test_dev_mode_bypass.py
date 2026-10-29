@@ -79,9 +79,9 @@ class TestDevBypassSettings:
         assert s.DEV_USER_ID == _DEV_UUID
         assert s.DEV_PERMISSIONS == ["*"]
 
-    def test_bypass_on_in_test(self):
-        s = self._build_settings(DEV_MODE_BYPASS="true", ENVIRONMENT="test")
-        assert s.DEV_MODE_BYPASS is True
+    def test_bypass_rejected_in_test(self):
+        with pytest.raises(ValueError, match="never in tests"):
+            self._build_settings(DEV_MODE_BYPASS="true", ENVIRONMENT="test")
 
     def test_bypass_rejected_in_production(self):
         with pytest.raises(ValueError, match="safety guard"):

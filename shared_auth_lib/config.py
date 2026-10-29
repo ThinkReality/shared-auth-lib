@@ -29,7 +29,7 @@ class AuthLibSettings(BaseSettings):
     SERVICE_TOKEN: str = ""
     GATEWAY_TIMESTAMP_TOLERANCE: int = 30
 
-    # Skips HMAC verification and injects a fake AuthContext; guarded to dev environments only.
+    # Skips HMAC verification and injects a fake AuthContext; ENVIRONMENT=development only.
     DEV_MODE_BYPASS: bool = False
     DEV_USER_ID: UUID = Field(default=_DEV_UUID)
     DEV_TENANT_ID: UUID = Field(default=_DEV_UUID)
@@ -70,13 +70,12 @@ class AuthLibSettings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_dev_bypass(self) -> "AuthLibSettings":
-        if not self.DEV_MODE_BYPASS:
-            return self
-        if not self.ENVIRONMENT.is_local:
+        if self.DEV_MODE_BYPASS and self.ENVIRONMENT is not Environment.DEVELOPMENT:
             raise ValueError(
-                f"AUTH_LIB_DEV_MODE_BYPASS=true is only allowed when ENVIRONMENT "
-                f"is 'development' or 'test', but got '{self.ENVIRONMENT}'. This "
-                f"is a safety guard to prevent dev mode from running in production."
+                f"AUTH_LIB_DEV_MODE_BYPASS=true is only allowed when ENVIRONMENT is "
+                f"'development', but got '{self.ENVIRONMENT}': never in tests, staging or "
+                f"production. This is a safety guard; tests sign requests with "
+                f"shared_auth_lib.testing.signed_client instead."
             )
         return self
 
