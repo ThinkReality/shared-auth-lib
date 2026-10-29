@@ -5,6 +5,24 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.86.0] - 2026-10-29
+
+Pins tr-shared-lib v0.114.0.
+
+### Changed
+- **Breaking:** `AUTH_LIB_DEV_MODE_BYPASS=true` is refused unless `ENVIRONMENT=development`. `test` used to be
+  allowed, so a developer `.env` with the flag on (`AuthLibSettings` reads `.env` itself) bypassed HMAC and
+  `require_auth` in every local test run while CI, which has no `.env`, did not. Tests sign requests with
+  `shared_auth_lib.testing.signed_client`.
+
+**Through the pin (breaking for services):** the error-code guard checks category, the raising class's category and
+runtime-built codes; `BadGatewayError` and `ServiceCache` are added; lib-domain codes are renamed. See tr-shared-lib
+0.114.0.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.114.0, shared-auth-lib v0.86.0) in the change that
+renames the codes the guard reports and replaces `app/core/redis.py` with one `ServiceCache(...)`. A local `.env`
+with `AUTH_LIB_DEV_MODE_BYPASS=true` now fails a test run at startup; set it to `false`.
+
 ## [0.85.0] - 2026-10-29
 
 Pins tr-shared-lib v0.113.0. No code change in this library: it raises the shared exceptions only with its own
