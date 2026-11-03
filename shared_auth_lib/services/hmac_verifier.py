@@ -1,10 +1,11 @@
 """HMAC signature computation and verification for gateway-signed requests.
 
 Security notes:
-- Replay protection uses a timestamp tolerance window (default 30 seconds).
-  An attacker who captures a valid signed request has at most 30 seconds to
-  replay it. This is an accepted risk for internal-network traffic between
-  API gateway and downstream services. For highly sensitive operations
+- Replay protection uses a timestamp tolerance window
+  (AuthLibSettings.GATEWAY_TIMESTAMP_TOLERANCE). An attacker who captures a
+  valid signed request has at most the tolerance window to replay it. This
+  is an accepted risk for internal-network traffic between API gateway and
+  downstream services. For highly sensitive operations
   (financial transactions), add Redis-based nonce deduplication on top.
 - Query parameters are NOT included in the HMAC signature. This is an
   accepted risk since query params control pagination/filtering, not
@@ -15,13 +16,10 @@ Security notes:
 import hashlib
 import hmac
 from datetime import UTC, datetime
-from typing import Final
 
 from tr_shared.security import constant_time_equals
 
 from shared_auth_lib.constants.headers import SIGNED_HEADERS
-
-TIMESTAMP_TOLERANCE_SECONDS: Final[int] = 30
 
 
 def _get_header_value(headers: dict[str, str], name: str) -> str:
@@ -103,7 +101,7 @@ def verify_signature(
     secret: str,
     signature: str,
     timestamp: str,
-    tolerance_seconds: int = TIMESTAMP_TOLERANCE_SECONDS,
+    tolerance_seconds: int,
 ) -> bool:
     """Verify HMAC signature from gateway.
 
