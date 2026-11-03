@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from tr_shared.config import CsvList
 from tr_shared.contracts import ENTITLEMENT_MODULES, Environment
 
 _DEV_UUID = UUID("00000000-0000-0000-0000-000000000001")
@@ -33,9 +34,9 @@ class AuthLibSettings(BaseSettings):
     DEV_MODE_BYPASS: bool = False
     DEV_USER_ID: UUID = Field(default=_DEV_UUID)
     DEV_TENANT_ID: UUID = Field(default=_DEV_UUID)
-    DEV_ROLES: list[str] = Field(default=["admin"])
-    DEV_PERMISSIONS: list[str] = Field(default=["*"])
-    DEV_MODULES: list[str] = Field(
+    DEV_ROLES: CsvList = Field(default=["admin"])
+    DEV_PERMISSIONS: CsvList = Field(default=["*"])
+    DEV_MODULES: CsvList = Field(
         default_factory=lambda: sorted(m.value for m in ENTITLEMENT_MODULES),
         description="Modules the dev bypass grants when X-Dev-Modules is absent",
     )
