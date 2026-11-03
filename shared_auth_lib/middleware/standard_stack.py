@@ -60,6 +60,7 @@ from tr_shared.middleware import (
     UnstorableTextMiddleware,
 )
 
+from shared_auth_lib.config import get_settings
 from shared_auth_lib.middleware.hmac_middleware import GatewayHMACMiddleware
 from shared_auth_lib.middleware.identity_middleware import (
     IdentityExtractionMiddleware,
@@ -96,12 +97,10 @@ def install_standard_middleware(
     *,
     service_name: str,
     environment: str,
-    hmac_secret: str,
     hmac_skip_paths: Sequence[str],
     hmac_redis_url: str,
     cors: dict[str, Any] | None,
     slack_webhook_url: str | None = "",
-    hmac_tolerance_seconds: int | None = None,
     idempotency_redis_url: str | None = None,
     extras: Sequence[tuple[Slot, type, dict[str, Any]]] = (),
 ) -> None:
@@ -110,12 +109,16 @@ def install_standard_middleware(
     Call `setup_monitoring` first if the service uses it — see the module
     docstring.
 
+    The HMAC secret, the dev bypass and the timestamp tolerance come from
+    `AuthLibSettings`, read once here. Settings that fail validation (the bypass
+    outside development, a blank secret in production) therefore stop the
+    service at startup instead of failing every request.
+
     Args:
         service_name: Passed to Logging and the error handler. Not optional:
             `LoggingMiddleware` silently defaults it to "unknown", and two
             services shipped logs attributed to nobody because of it.
         environment: One of development / test / staging / production.
-        hmac_secret: Shared secret with the gateway.
         hmac_skip_paths: Paths exempt from signature verification. Any sequence
             — tr-realty-data-hub declares a set — normalised to a list here.
         hmac_redis_url: REQUIRED. The middleware builds its own pooled
@@ -129,7 +132,6 @@ def install_standard_middleware(
             configs share no shape worth inventing.
         slack_webhook_url: None is coerced to "" — callers pass a settings
             value that is optional on several services.
-        hmac_tolerance_seconds: None leaves the library default in force.
         idempotency_redis_url: Redis URL, or None for no idempotency layer.
         extras: `(slot, middleware_class, kwargs)`, applied in the order given
             within each slot.
@@ -165,14 +167,15 @@ def install_standard_middleware(
     add(UnstorableTextMiddleware)
     add(IdentityExtractionMiddleware)
 
-    hmac_kwargs: dict[str, Any] = {
-        "secret": hmac_secret,
-        "skip_paths": list(hmac_skip_paths),
-        "redis_url": hmac_redis_url,
-    }
-    if hmac_tolerance_seconds is not None:
-        hmac_kwargs["tolerance_seconds"] = hmac_tolerance_seconds
-    add(GatewayHMACMiddleware, **hmac_kwargs)
+    settings = get_settings()
+    add(
+        GatewayHMACMiddleware,
+        secret=settings.GATEWAY_SIGNING_SECRET,
+        dev_mode_bypass=settings.DEV_MODE_BYPASS,
+        tolerance_seconds=settings.GATEWAY_TIMESTAMP_TOLERANCE,
+        skip_paths=list(hmac_skip_paths),
+        redis_url=hmac_redis_url,
+    )
 
     add_slot(Slot.BEFORE_HMAC)
 

@@ -13,19 +13,20 @@ index 0 == outermost == first to see the request.
 
 from __future__ import annotations
 
+import inspect
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from shared_auth_lib.config import get_settings
 from shared_auth_lib.middleware import Slot, install_standard_middleware
 from tr_shared.middleware import register_exception_handlers
 from tests.test_hmac_middleware import REFUSED_REDIS_URL, _sign_headers
 from tests.test_hmac_middleware import SECRET as SIGNING_SECRET
-
-SECRET = "test-secret"
 
 
 class _Marker(BaseHTTPMiddleware):
@@ -43,7 +44,6 @@ def build(**overrides: Any) -> FastAPI:
         "service_name": "test-service",
         "environment": "test",
         "cors": {"allow_origins": ["http://localhost:3000"]},
-        "hmac_secret": SECRET,
         "hmac_skip_paths": ["/api/v1/health"],
         "hmac_redis_url": "redis://localhost:6379/0",
     }
@@ -177,7 +177,6 @@ def test_hmac_redis_url_is_required():
             service_name="s",
             environment="test",
             cors=None,
-            hmac_secret=SECRET,
             hmac_skip_paths=[],
         )
 
@@ -246,14 +245,39 @@ def test_slack_webhook_none_is_coerced_to_empty_string():
     assert kwargs_for(app, "GlobalErrorHandlerMiddleware")["slack_webhook_url"] == ""
 
 
-def test_hmac_tolerance_default_is_left_to_the_library():
-    """None must mean "the library's default", not "0 seconds"."""
-    assert "tolerance_seconds" not in kwargs_for(build(), "GatewayHMACMiddleware")
+@pytest.fixture
+def auth_lib_env(monkeypatch: pytest.MonkeyPatch):
+    def _set(**values: str) -> None:
+        for key, value in values.items():
+            monkeypatch.setenv(key, value)
+        get_settings.cache_clear()
+
+    yield _set
+    get_settings.cache_clear()
 
 
-def test_hmac_tolerance_is_forwarded_when_given():
-    app = build(hmac_tolerance_seconds=45)
-    assert kwargs_for(app, "GatewayHMACMiddleware")["tolerance_seconds"] == 45
+def test_the_factory_passes_the_settings_tolerance(auth_lib_env):
+    auth_lib_env(AUTH_LIB_GATEWAY_TIMESTAMP_TOLERANCE="45")
+    assert kwargs_for(build(), "GatewayHMACMiddleware")["tolerance_seconds"] == 45
+
+
+def test_the_factory_passes_the_settings_secret_and_bypass(auth_lib_env):
+    auth_lib_env(AUTH_LIB_GATEWAY_SIGNING_SECRET="from-settings")
+    kwargs = kwargs_for(build(), "GatewayHMACMiddleware")
+    assert kwargs["secret"] == "from-settings"
+    assert kwargs["dev_mode_bypass"] is False
+
+
+def test_the_factory_takes_no_secret_or_tolerance_argument():
+    parameters = inspect.signature(install_standard_middleware).parameters
+    assert "hmac_secret" not in parameters
+    assert "hmac_tolerance_seconds" not in parameters
+
+
+def test_the_bypass_outside_development_fails_at_install(auth_lib_env):
+    auth_lib_env(ENVIRONMENT="test", AUTH_LIB_DEV_MODE_BYPASS="true")
+    with pytest.raises(ValidationError, match="DEV_MODE_BYPASS"):
+        build()
 
 
 def test_skip_paths_accepts_a_set():
@@ -274,8 +298,11 @@ def test_the_hmac_redis_url_reaches_the_middleware_instance():
     assert hmac._redis_url == "redis://cache:6379/3"
 
 
-def test_a_replay_store_outage_answers_503_with_the_requests_correlation_id():
-    app = build(hmac_secret=SIGNING_SECRET, hmac_redis_url=REFUSED_REDIS_URL)
+def test_a_replay_store_outage_answers_503_with_the_requests_correlation_id(
+    auth_lib_env,
+):
+    auth_lib_env(AUTH_LIB_GATEWAY_SIGNING_SECRET=SIGNING_SECRET)
+    app = build(hmac_redis_url=REFUSED_REDIS_URL)
 
     @app.get("/protected")
     async def protected():

@@ -83,9 +83,9 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
         self,
         app: ASGIApp,
         secret: str,
+        dev_mode_bypass: bool,
+        tolerance_seconds: int,
         skip_paths: list[str] | None = None,
-        tolerance_seconds: int = 30,
-        dev_mode_bypass: bool | None = None,
         redis_url: str | None = None,
     ) -> None:
         super().__init__(app)
@@ -106,15 +106,7 @@ class GatewayHMACMiddleware(BaseHTTPMiddleware):
             if redis_url is not None
             else None
         )
-        if dev_mode_bypass is None:
-            from shared_auth_lib.config import get_settings
-
-            try:
-                self._dev_mode_bypass = get_settings().DEV_MODE_BYPASS
-            except Exception:
-                self._dev_mode_bypass = False
-        else:
-            self._dev_mode_bypass = dev_mode_bypass
+        self._dev_mode_bypass = dev_mode_bypass
         if self._dev_mode_bypass:
             logger.warning(
                 "DEV_MODE_BYPASS ACTIVE — HMAC verification is disabled. "

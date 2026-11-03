@@ -355,6 +355,7 @@ class TestHMACMiddlewareBypass:
             GatewayHMACMiddleware,
             secret="test-secret",
             dev_mode_bypass=dev_mode_bypass,
+            tolerance_seconds=30,
         )
 
         @app.get("/api/v1/test")

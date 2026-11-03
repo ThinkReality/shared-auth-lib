@@ -50,6 +50,8 @@ def _app() -> FastAPI:
     app.add_middleware(
         GatewayHMACMiddleware,
         secret=SECRET,
+        dev_mode_bypass=False,
+        tolerance_seconds=30,
         skip_paths=["/api/v1/health"],
     )
 
