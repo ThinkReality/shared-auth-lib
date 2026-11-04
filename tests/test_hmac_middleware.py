@@ -1,3 +1,4 @@
+import inspect
 from datetime import UTC, datetime
 
 import pytest
@@ -21,8 +22,9 @@ def _create_app(
     app.add_middleware(
         GatewayHMACMiddleware,
         secret=SECRET,
-        skip_paths=skip_paths,
+        dev_mode_bypass=False,
         tolerance_seconds=tolerance,
+        skip_paths=skip_paths,
     )
 
     @app.get("/protected")
@@ -186,12 +188,22 @@ class TestSkipPathMatching:
     def test_skip_path_matching(self):
         for skip_paths, path, expected in self.CASES:
             mw = GatewayHMACMiddleware(
-                app=None, secret=SECRET, skip_paths=skip_paths
+                app=None,
+                secret=SECRET,
+                dev_mode_bypass=False,
+                tolerance_seconds=30,
+                skip_paths=skip_paths,
             )
             assert mw._should_skip(path) is expected, (
                 f"skip_paths={skip_paths!r} path={path!r} "
                 f"expected skip={expected}, got {not expected}"
             )
+
+
+def test_secret_bypass_and_tolerance_have_no_default():
+    parameters = inspect.signature(GatewayHMACMiddleware.__init__).parameters
+    for name in ("secret", "dev_mode_bypass", "tolerance_seconds"):
+        assert parameters[name].default is inspect.Parameter.empty, name
 
 
 REFUSED_REDIS_URL = "redis://127.0.0.1:1/0"
@@ -204,7 +216,13 @@ def replay_guarded(redis_url: str) -> GatewayHMACMiddleware:
     async def protected():
         return {"status": "ok"}
 
-    return GatewayHMACMiddleware(app, secret=SECRET, redis_url=redis_url)
+    return GatewayHMACMiddleware(
+        app,
+        secret=SECRET,
+        dev_mode_bypass=False,
+        tolerance_seconds=30,
+        redis_url=redis_url,
+    )
 
 
 class TestGatewayHMACReplayProtection:

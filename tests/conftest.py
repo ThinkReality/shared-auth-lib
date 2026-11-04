@@ -2,6 +2,7 @@
 
 import os
 
-# Ensure AuthLibSettings can be instantiated during tests
-# without requiring real secrets.
-os.environ.setdefault("AUTH_LIB_GATEWAY_SIGNING_SECRET", "test-secret")
+from tr_shared.testing.config import POLICY_ENV
+
+for key, value in POLICY_ENV.items():
+    os.environ.setdefault(key, value)

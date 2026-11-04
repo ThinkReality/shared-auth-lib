@@ -1,8 +1,9 @@
 """Tests for HMAC signature computation and verification."""
 
+import inspect
 from datetime import UTC, datetime, timedelta
 
-
+from shared_auth_lib.services import hmac_verifier
 from shared_auth_lib.services.hmac_verifier import (
     SIGNED_HEADERS,
     build_canonical_string,
@@ -11,6 +12,15 @@ from shared_auth_lib.services.hmac_verifier import (
 )
 
 SECRET = "test-secret-key-32-bytes-long!!!"
+
+TOLERANCE = 30
+
+
+def test_the_tolerance_is_required_and_has_no_module_default():
+    parameter = inspect.signature(verify_signature).parameters["tolerance_seconds"]
+    assert parameter.default is inspect.Parameter.empty
+    assert not hasattr(hmac_verifier, "TIMESTAMP_TOLERANCE_SECONDS")
+
 
 SAMPLE_HEADERS = {
     "X-User-ID": "550e8400-e29b-41d4-a716-446655440000",
@@ -151,20 +161,36 @@ class TestVerifySignature:
 
     def test_valid_signature_passes(self):
         params, sig = self._sign()
-        assert verify_signature(**params, signature=sig) is True
+        assert (
+            verify_signature(**params, signature=sig, tolerance_seconds=TOLERANCE)
+            is True
+        )
 
     def test_wrong_signature_fails(self):
         params, _ = self._sign()
-        assert verify_signature(**params, signature="0" * 64) is False
+        assert (
+            verify_signature(
+                **params, signature="0" * 64, tolerance_seconds=TOLERANCE
+            )
+            is False
+        )
 
     def test_non_ascii_signature_fails_instead_of_raising(self):
         params, _ = self._sign()
-        assert verify_signature(**params, signature="é" * 64) is False
+        assert (
+            verify_signature(
+                **params, signature="é" * 64, tolerance_seconds=TOLERANCE
+            )
+            is False
+        )
 
     def test_wrong_secret_fails(self):
         params, sig = self._sign()
         params["secret"] = "wrong-secret"
-        assert verify_signature(**params, signature=sig) is False
+        assert (
+            verify_signature(**params, signature=sig, tolerance_seconds=TOLERANCE)
+            is False
+        )
 
     def test_expired_timestamp_fails(self):
         old_ts = (datetime.now(UTC) - timedelta(seconds=60)).isoformat()
@@ -193,12 +219,18 @@ class TestVerifySignature:
     def test_invalid_timestamp_format_fails(self):
         params, sig = self._sign()
         params["timestamp"] = "not-a-timestamp"
-        assert verify_signature(**params, signature=sig) is False
+        assert (
+            verify_signature(**params, signature=sig, tolerance_seconds=TOLERANCE)
+            is False
+        )
 
     def test_none_timestamp_fails(self):
         params, sig = self._sign()
         params["timestamp"] = None
-        assert verify_signature(**params, signature=sig) is False
+        assert (
+            verify_signature(**params, signature=sig, tolerance_seconds=TOLERANCE)
+            is False
+        )
 
     def test_forged_tenant_id_fails(self):
         """Verify that a request with a tampered X-Tenant-ID is rejected."""
@@ -227,6 +259,7 @@ class TestVerifySignature:
                 secret=SECRET,
                 signature=sig,
                 timestamp=ts,
+                tolerance_seconds=TOLERANCE,
             )
             is False
         )
@@ -260,6 +293,7 @@ class TestVerifySignature:
                 secret=SECRET,
                 signature=sig,
                 timestamp=ts,
+                tolerance_seconds=TOLERANCE,
             )
             is True
         )
@@ -289,6 +323,7 @@ class TestSignedEmailAndPermissions:
                 secret=SECRET,
                 signature=sig,
                 timestamp=ts,
+                tolerance_seconds=TOLERANCE,
             )
             is True
         )
@@ -308,6 +343,7 @@ class TestSignedEmailAndPermissions:
                 secret=SECRET,
                 signature=sig,
                 timestamp=ts,
+                tolerance_seconds=TOLERANCE,
             )
             is False
         )
@@ -327,6 +363,7 @@ class TestSignedEmailAndPermissions:
                 secret=SECRET,
                 signature=sig,
                 timestamp=ts,
+                tolerance_seconds=TOLERANCE,
             )
             is False
         )

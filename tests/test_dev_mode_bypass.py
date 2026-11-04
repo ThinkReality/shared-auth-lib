@@ -9,6 +9,7 @@ from unittest.mock import patch
 from uuid import UUID
 
 import pytest
+from pydantic import ValidationError
 from starlette.requests import Request
 from starlette.testclient import TestClient
 
@@ -172,8 +173,8 @@ class TestBuildDevAuthContextEnvDefaults:
             "AUTH_LIB_DEV_USER_ID": custom_id,
             "AUTH_LIB_DEV_TENANT_ID": custom_id,
             "AUTH_LIB_DEV_EMAIL": "custom@test.local",
-            "AUTH_LIB_DEV_ROLES": '["sales_manager"]',
-            "AUTH_LIB_DEV_PERMISSIONS": '["listing:read","listing:update"]',
+            "AUTH_LIB_DEV_ROLES": "sales_manager",
+            "AUTH_LIB_DEV_PERMISSIONS": "listing:read,listing:update",
         }
         with patch.dict(os.environ, env, clear=False):
             from shared_auth_lib.config import get_settings
@@ -185,6 +186,19 @@ class TestBuildDevAuthContextEnvDefaults:
         assert ctx.email == "custom@test.local"
         assert ctx.roles == ["sales_manager"]
         assert ctx.permissions == ["listing:read", "listing:update"]
+        get_settings.cache_clear()
+
+    @pytest.mark.parametrize(
+        "name",
+        ["AUTH_LIB_DEV_ROLES", "AUTH_LIB_DEV_PERMISSIONS", "AUTH_LIB_DEV_MODULES"],
+    )
+    def test_a_json_list_is_refused(self, name):
+        with patch.dict(os.environ, {**_dev_env(), name: '["a","b"]'}, clear=False):
+            from shared_auth_lib.config import get_settings
+
+            get_settings.cache_clear()
+            with pytest.raises(ValidationError):
+                get_settings()
         get_settings.cache_clear()
 
 
@@ -355,6 +369,7 @@ class TestHMACMiddlewareBypass:
             GatewayHMACMiddleware,
             secret="test-secret",
             dev_mode_bypass=dev_mode_bypass,
+            tolerance_seconds=30,
         )
 
         @app.get("/api/v1/test")

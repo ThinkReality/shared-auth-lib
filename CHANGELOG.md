@@ -5,6 +5,35 @@ All notable changes to shared-auth-lib will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.87.0] - 2026-11-04
+
+Pins tr-shared-lib v0.115.0 (floor `>=0.115.0`). Env-only config and hermetic tests (plan
+`2026-10-29-env-only-config-hermetic-tests.md`, task S1).
+
+### Changed
+- **Breaking:** `install_standard_middleware` reads `AuthLibSettings` once, at install, and passes the secret, the
+  bypass flag and the tolerance to `GatewayHMACMiddleware`; its `hmac_secret` and `hmac_tolerance_seconds` parameters
+  are gone. `AUTH_LIB_DEV_MODE_BYPASS=true` outside development now fails at startup instead of failing auth on
+  every request.
+- **Breaking:** `GatewayHMACMiddleware(app, secret, dev_mode_bypass, tolerance_seconds, ...)` takes all three as
+  required arguments and reads no settings.
+- **Breaking:** `verify_signature` takes a required `tolerance_seconds`; `TIMESTAMP_TOLERANCE_SECONDS` is deleted, so
+  `AUTH_LIB_GATEWAY_TIMESTAMP_TOLERANCE` is the one default.
+- **Breaking:** `AuthLibSettings` reads no `.env` file, only the process environment.
+- **Breaking:** `AUTH_LIB_DEV_ROLES`, `AUTH_LIB_DEV_PERMISSIONS` and `AUTH_LIB_DEV_MODULES` are `CsvList`:
+  comma-separated; a JSON list fails.
+- The test suite takes its environment from tr-shared-lib's `POLICY_ENV`.
+
+### Added
+- `shared_auth_lib.testing.assert_app_refuses_dev_bypass(repo_root)`: runs `python -c "import app.main"` with the
+  bypass on and asserts a non-zero exit with the refusal. Each HMAC service's startup test calls it.
+- `DEV_BYPASS_REFUSAL` in `shared_auth_lib.config`, the one copy of the refusal text.
+- G18 (`assert_no_dotenv_loading`) and G21 (`assert_settings_are_env_safe`) self-tests.
+
+**Consumer action:** bump both pins together (tr-shared-lib v0.115.0, shared-auth-lib v0.87.0) in the service's
+relock commit; drop `hmac_secret=` from `install_standard_middleware`; set any `AUTH_LIB_DEV_*` list value
+comma-separated.
+
 ## [0.86.0] - 2026-10-29
 
 Pins tr-shared-lib v0.114.0.

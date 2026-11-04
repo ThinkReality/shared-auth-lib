@@ -5,9 +5,13 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from tr_shared.config import CsvList
 from tr_shared.contracts import ENTITLEMENT_MODULES, Environment
 
 _DEV_UUID = UUID("00000000-0000-0000-0000-000000000001")
+DEV_BYPASS_REFUSAL = (
+    "AUTH_LIB_DEV_MODE_BYPASS=true is only allowed when ENVIRONMENT is 'development'"
+)
 
 
 class AuthLibSettings(BaseSettings):
@@ -33,9 +37,9 @@ class AuthLibSettings(BaseSettings):
     DEV_MODE_BYPASS: bool = False
     DEV_USER_ID: UUID = Field(default=_DEV_UUID)
     DEV_TENANT_ID: UUID = Field(default=_DEV_UUID)
-    DEV_ROLES: list[str] = Field(default=["admin"])
-    DEV_PERMISSIONS: list[str] = Field(default=["*"])
-    DEV_MODULES: list[str] = Field(
+    DEV_ROLES: CsvList = Field(default=["admin"])
+    DEV_PERMISSIONS: CsvList = Field(default=["*"])
+    DEV_MODULES: CsvList = Field(
         default_factory=lambda: sorted(m.value for m in ENTITLEMENT_MODULES),
         description="Modules the dev bypass grants when X-Dev-Modules is absent",
     )
@@ -43,8 +47,6 @@ class AuthLibSettings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_prefix="AUTH_LIB_",
-        env_file=".env",
-        env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",
     )
@@ -72,8 +74,7 @@ class AuthLibSettings(BaseSettings):
     def validate_dev_bypass(self) -> "AuthLibSettings":
         if self.DEV_MODE_BYPASS and self.ENVIRONMENT is not Environment.DEVELOPMENT:
             raise ValueError(
-                f"AUTH_LIB_DEV_MODE_BYPASS=true is only allowed when ENVIRONMENT is "
-                f"'development', but got '{self.ENVIRONMENT}': never in tests, staging or "
+                f"{DEV_BYPASS_REFUSAL}, but got '{self.ENVIRONMENT}': never in tests, staging or "
                 f"production. This is a safety guard; tests sign requests with "
                 f"shared_auth_lib.testing.signed_client instead."
             )

@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from structlog.testing import capture_logs
 
+from shared_auth_lib.config import get_settings
 from shared_auth_lib.dependencies.auth_dependencies import _AuthClientRegistry
 from shared_auth_lib.middleware import install_standard_middleware
 from shared_auth_lib.testing import Persona, async_signed_client
@@ -31,9 +32,11 @@ def replay_store() -> str:
 def _signing_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("AUTH_LIB_GATEWAY_SIGNING_SECRET", SECRET)
     monkeypatch.setenv("AUTH_LIB_DEV_MODE_BYPASS", "false")
+    get_settings.cache_clear()
     _AuthClientRegistry.reset()
     yield
     _AuthClientRegistry.reset()
+    get_settings.cache_clear()
 
 
 def _app(redis_url: str = REFUSING_REDIS) -> FastAPI:
@@ -53,7 +56,6 @@ def _app(redis_url: str = REFUSING_REDIS) -> FastAPI:
         service_name="test-service",
         environment="test",
         cors=None,
-        hmac_secret=SECRET,
         hmac_skip_paths=["/api/v1/open"],
         hmac_redis_url=redis_url,
     )

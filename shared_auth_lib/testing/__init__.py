@@ -31,6 +31,7 @@ from shared_auth_lib.testing.route_surfaces import (
     classify_route,
     route_surface_report,
 )
+from shared_auth_lib.testing.startup import assert_app_refuses_dev_bypass
 
 __all__ = [
     "FakeAuthContextProvider",
@@ -38,6 +39,7 @@ __all__ = [
     "async_signed_client",
     "gateway_auth",
     "signed_client",
+    "assert_app_refuses_dev_bypass",
     "FAMILIES",
     "ModuleExemption",
     "RouteExemption",
