@@ -9,6 +9,9 @@ from tr_shared.config import CsvList
 from tr_shared.contracts import ENTITLEMENT_MODULES, Environment
 
 _DEV_UUID = UUID("00000000-0000-0000-0000-000000000001")
+DEV_BYPASS_REFUSAL = (
+    "AUTH_LIB_DEV_MODE_BYPASS=true is only allowed when ENVIRONMENT is 'development'"
+)
 
 
 class AuthLibSettings(BaseSettings):
@@ -71,8 +74,7 @@ class AuthLibSettings(BaseSettings):
     def validate_dev_bypass(self) -> "AuthLibSettings":
         if self.DEV_MODE_BYPASS and self.ENVIRONMENT is not Environment.DEVELOPMENT:
             raise ValueError(
-                f"AUTH_LIB_DEV_MODE_BYPASS=true is only allowed when ENVIRONMENT is "
-                f"'development', but got '{self.ENVIRONMENT}': never in tests, staging or "
+                f"{DEV_BYPASS_REFUSAL}, but got '{self.ENVIRONMENT}': never in tests, staging or "
                 f"production. This is a safety guard; tests sign requests with "
                 f"shared_auth_lib.testing.signed_client instead."
             )
